@@ -35,7 +35,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:v${{ github.run_number }}
 
-  deplay:
+  deploy:
     needs: build
     if: ${{ success() }}
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
-          post: ${{ secrets.REMOTE_PORT }}
+          port: ${{ secrets.REMOTE_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             ${{ secrets.PATH_TO_DOCKER }} pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:v${{ github.run_number }}
