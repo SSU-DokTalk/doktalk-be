@@ -1,11 +1,11 @@
-from starlette.middleware.base import BaseHTTPMiddleware
-from app.core.security import get_token, get_token_payload
-from fastapi import HTTPException, status
+from jwt.exceptions import ExpiredSignatureError
 from sqlalchemy.orm import Session
+from starlette.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.core.security import get_token, get_token_payload
 from app.db.connection import get_db
 from app.model.User import User
-from jwt.exceptions import ExpiredSignatureError
-from starlette.responses import JSONResponse
 
 
 class JWTMiddleware(BaseHTTPMiddleware):
@@ -19,6 +19,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
         #
         if request.method == "GET":
             token_not_needed = [
+                "/favicon.ico",
                 "/docs",
                 "/openapi.json",
                 "/oauth/kakao",
@@ -64,7 +65,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             # 존재하지 않는 유저인 경우
             if user == None:
                 return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
-
+            request.state.user = user
             return await call_next(request)
         finally:
             db.close()

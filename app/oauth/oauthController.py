@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
-from app.db.connection import get_db
-from app.service.user import *
-from app.schema.user import *
-from app.oauth.oauthSchema import *
-from app.oauth.oauthService import *
 from starlette import status
-from app.model.User import OAuth
+
 from app.core.security import (
     random_password,
     TokenData,
     create_access_token,
     create_refresh_token,
 )
+from app.db.connection import get_db
+from app.model.User import OAuth
+from app.oauth.oauthSchema import *
+from app.oauth.oauthService import *
+from app.schema.user import *
+from app.service.user import *
 
 router = APIRouter()
 

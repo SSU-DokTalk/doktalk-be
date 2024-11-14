@@ -1,10 +1,12 @@
+from datetime import datetime
+from typing import Union
+
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, func, ForeignKey
 from sqlalchemy.orm import relationship
+
 from app.db.session import Base
-from typing import Union
-from datetime import datetime
-from app.schema.user import BasicRegisterReq
 from app.oauth.oauthSchema import PROVIDER
+from app.schema.user import BasicRegisterReq
 
 
 class User(Base):

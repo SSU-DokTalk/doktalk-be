@@ -1,17 +1,14 @@
-from fastapi import APIRouter, Depends, Response, Security
+from fastapi import APIRouter, Depends, Response, Request
 from sqlalchemy.orm import Session
-from app.db.connection import get_db
-from app.service.user import *
-from app.schema.user import *
-from fastapi.security import HTTPAuthorizationCredentials
+
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     TokenData,
-    oauth2_scheme,
-    HTTPBearer,
 )
-from typing import Annotated
+from app.db.connection import get_db
+from app.service.user import *
+from app.schema.user import *
 
 router = APIRouter()
 
@@ -43,10 +40,8 @@ def basicLoginController(
     return user
 
 
-@router.get("/test")
-def testController(
-    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-):
-    print(authorization.credentials)
+@router.get("/me")
+def getMyInfoController(request: Request):
+    user: User = request.state.user
 
-    return "good"
+    return user

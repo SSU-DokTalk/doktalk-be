@@ -1,5 +1,6 @@
 import os
 import requests
+
 from app.oauth.oauthSchema import *
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")

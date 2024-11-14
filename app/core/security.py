@@ -1,13 +1,13 @@
 import os
-from passlib.context import CryptContext
 import string
 import random
-from pydantic import BaseModel, Field
-import jwt
-from jwt.exceptions import InvalidTokenError, ExpiredSignatureError
-from typing import Literal
-from datetime import datetime, timedelta, timezone
+
 from fastapi.security import HTTPBearer
+import jwt
+from jwt.exceptions import ExpiredSignatureError
+from passlib.context import CryptContext
+from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
 
 cryptContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = HTTPBearer()
@@ -67,6 +67,8 @@ def create_refresh_token(data: TokenData) -> str:
 
 def get_token(token: str) -> str:
     prefix = "Bearer "
+    if not token or len(token) < len(prefix):
+        return None
     if token[: len(prefix)] != prefix:
         return None
     return token[len(prefix) :]
