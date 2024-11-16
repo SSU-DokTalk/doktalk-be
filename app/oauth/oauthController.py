@@ -25,6 +25,7 @@ router = APIRouter()
 async def oAuthRegisterController(
     provider: PROVIDER,
     code: str,
+    redirect_uri: str,
     response: Response,
     db: Session = Depends(get_db),
 ):
@@ -34,9 +35,9 @@ async def oAuthRegisterController(
 
     try:
         if provider == PROVIDER.KAKAO:
-            user_data = auth_kakao(code)
+            user_data = auth_kakao(code, redirect_uri)
         elif provider == PROVIDER.GOOGLE:
-            user_data = auth_google(code)
+            user_data = auth_google(code, redirect_uri)
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"

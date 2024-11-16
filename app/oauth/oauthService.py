@@ -5,17 +5,17 @@ from app.oauth.oauthSchema import *
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")
-KAKAO_CALLBACK_URI = os.getenv("OAUTH_REDIRECT_URI") + "/kakao"
+# KAKAO_CALLBACK_URI = os.getenv("OAUTH_REDIRECT_URI") + "/kakao"
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_CALLBACK_URI = os.getenv("OAUTH_REDIRECT_URI") + "/google"
+# GOOGLE_CALLBACK_URI = os.getenv("OAUTH_REDIRECT_URI") + "/google"
 
 
-def auth_kakao(code: str):
+def auth_kakao(code: str, redirect_uri: str):
     try:
         # request access token to kakao
-        token_url = f"https://kauth.kakao.com/oauth/token?client_id={KAKAO_CLIENT_ID}&client_secret={KAKAO_CLIENT_SECRET}&code={code}&grant_type=authorization_code&redirect_uri={KAKAO_CALLBACK_URI}"
+        token_url = f"https://kauth.kakao.com/oauth/token?client_id={KAKAO_CLIENT_ID}&client_secret={KAKAO_CLIENT_SECRET}&code={code}&grant_type=authorization_code&redirect_uri={redirect_uri}/kakao"
         headers = {"Content-type": "application/x-www-form-urlencoded;charset=utf-8"}
         token_response = requests.post(token_url, headers=headers)
         if token_response.status_code != 200:
@@ -44,10 +44,10 @@ def auth_kakao(code: str):
     )
 
 
-def auth_google(code: str):
+def auth_google(code: str, redirect_uri: str):
     try:
         # request access token to google
-        token_url = f"https://oauth2.googleapis.com/token?client_id={GOOGLE_CLIENT_ID}&client_secret={GOOGLE_CLIENT_SECRET}&code={code}&grant_type=authorization_code&redirect_uri={GOOGLE_CALLBACK_URI}"
+        token_url = f"https://oauth2.googleapis.com/token?client_id={GOOGLE_CLIENT_ID}&client_secret={GOOGLE_CLIENT_SECRET}&code={code}&grant_type=authorization_code&redirect_uri={redirect_uri}/google"
         token_response = requests.post(token_url)
         if token_response.status_code != 200:
             raise Exception
