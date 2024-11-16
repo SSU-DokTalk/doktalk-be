@@ -6,7 +6,7 @@ from app.core.middleware import JWTMiddleware
 from app.oauth import oauthController
 
 origins = [
-    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
 ]
 
 

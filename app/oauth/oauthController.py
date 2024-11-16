@@ -1,3 +1,5 @@
+import base64
+
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 from starlette import status
@@ -7,6 +9,7 @@ from app.core.security import (
     TokenData,
     create_access_token,
     create_refresh_token,
+    encrypt,
 )
 from app.db.connection import get_db
 from app.model.User import OAuth
@@ -78,8 +81,11 @@ async def oAuthRegisterController(
         access_token = create_access_token(TokenData(userId=user.id, name=user.name))
         refresh_token = create_refresh_token(TokenData(userId=user.id, name=user.name))
 
-        response.headers["Authorization"] = access_token
-        response.set_cookie(key="Authorization", value=refresh_token)
+        response.headers["Authorization"] = encrypt(access_token)
+        response.set_cookie(
+            key="Authorization",
+            value=encrypt(refresh_token, base64.b64encode),
+        )
         return user
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

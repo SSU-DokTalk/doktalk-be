@@ -1,8 +1,10 @@
 import os
 import string
 import random
+import base64
+from typing import Callable
 
-from fastapi.security import HTTPBearer
+from fastapi.security import APIKeyHeader
 import jwt
 from jwt.exceptions import ExpiredSignatureError
 from passlib.context import CryptContext
@@ -10,7 +12,7 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 
 cryptContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = HTTPBearer()
+oauth2_scheme = APIKeyHeader(name="Authorization")
 
 
 def random_password() -> str:
@@ -65,7 +67,12 @@ def create_refresh_token(data: TokenData) -> str:
     return create_token(data, timedelta(days=14))
 
 
-def get_token(token: str) -> str:
+def encrypt(token: str, func: Callable[[str], bytes] = base64.b85encode) -> str:
+    return func(f"Bearer {token}".encode()).decode()
+
+
+def get_token(token: str, func: Callable[[str], bytes] = base64.b85decode) -> str:
+    token = func(token).decode()
     prefix = "Bearer "
     if not token or len(token) < len(prefix):
         return None

@@ -28,7 +28,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             if request.url.path in token_not_needed:
                 return await call_next(request)
         elif request.method == "POST":
-            token_not_needed = ["/user/register", "/user/login"]
+            token_not_needed = ["/user/register", "/user/login", "/user/access-token"]
             if request.url.path in token_not_needed:
                 return await call_next(request)
         elif request.method == "PUT":
@@ -43,7 +43,10 @@ class JWTMiddleware(BaseHTTPMiddleware):
         #
         # 토큰 검증이 필요한 경우
         #
+
         authorization = request.headers.get("Authorization")
+        if authorization == None:
+            return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
 
         token = get_token(authorization)
         # Bearer 토큰이 아닌 경우
