@@ -1,12 +1,23 @@
 from datetime import datetime
 from typing import Union
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, func, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Boolean,
+    func,
+    ForeignKey,
+    Enum,
+)
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 from app.oauth.oauthSchema import PROVIDER
 from app.schema.user import BasicRegisterReq
+from app.schema.enums import ROLE
+from pydantic import BaseModel, Field
 
 
 class User(Base):
@@ -28,6 +39,9 @@ class User(Base):
     name: Union[str, Column] = Column(String(255))
     gender: Union[bool, Column] = Column(Boolean)
     age: Union[int, Column] = Column(Integer)
+    role: Union[ROLE, Column] = Column(
+        Enum(ROLE), nullable=False, default=ROLE.USER, server_default=ROLE.USER.name
+    )
     createdAt: Union[datetime, Column] = Column(
         DateTime, nullable=False, server_default=func.now()
     )

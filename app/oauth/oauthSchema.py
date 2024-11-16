@@ -1,20 +1,8 @@
-from enum import Enum
 from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
-
-class PROVIDER(Enum):
-    KAKAO = "kakao"
-    NAVER = "naver"
-    GOOGLE = "google"
-    FACEBOOK = "facebook"
-
-    @classmethod
-    def from_str(cls, name: str):
-        for enum in cls:
-            if enum.value == name:
-                return enum
+from app.schema.enums import PROVIDER
 
 
 class oAuthLoginInfo(BaseModel):

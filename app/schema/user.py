@@ -6,11 +6,13 @@ from pydantic import BaseModel, Field, field_validator
 
 class BasicRegisterReq(BaseModel):
     email: str = Field(
+        examples=["test@test.com"],
         max_length=255,
         # 이메일 format 검증
         pattern=r"^[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
     password: str = Field(
+        examples=["testtest123@"],
         min_length=8,
         max_length=30,
         # 최소 8자. 영문자, 숫자, 특수문자를 각각 최소 1개 이상 포함 -> @field_validator
@@ -35,11 +37,13 @@ class BasicRegisterReq(BaseModel):
 
 class BasicLoginReq(BaseModel):
     email: str = Field(
+        examples=["test@test.com"],
         max_length=255,
         # 이메일 format 검증
         pattern=r"^[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
     password: str = Field(
+        examples=["testtest123@"],
         min_length=8,
         max_length=30,
         # 최소 8자. 영문자, 숫자, 특수문자를 각각 최소 1개 이상 포함 -> @field_validator

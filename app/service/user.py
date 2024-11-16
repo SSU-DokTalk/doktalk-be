@@ -1,8 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
+from app.core.security import cryptContext
 from app.model.User import User
 from app.schema.user import *
-from app.core.security import cryptContext
 
 
 def basicRegisterService(user_data: BasicRegisterReq, db: Session) -> int:

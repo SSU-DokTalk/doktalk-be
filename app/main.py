@@ -13,9 +13,9 @@ origins = [
 def createApp() -> FastAPI:
 
     SWAGGER_HEADERS = {
-        "title": "독:Talk API",
+        "title": "讀:Talk API",
         "version": "v1",
-        "description": "독:Talk 서비스에서 제공하는 API 목록입니다.",
+        "description": "讀:Talk 서비스에서 제공하는 API 목록입니다.",
         "contact": {
             "license_info": {
                 "name": "MIT",
