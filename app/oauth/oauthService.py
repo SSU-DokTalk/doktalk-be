@@ -5,11 +5,9 @@ from app.oauth.oauthSchema import *
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")
-# KAKAO_CALLBACK_URI = os.getenv("OAUTH_REDIRECT_URI") + "/kakao"
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-# GOOGLE_CALLBACK_URI = os.getenv("OAUTH_REDIRECT_URI") + "/google"
 
 
 def auth_kakao(code: str, redirect_uri: str):

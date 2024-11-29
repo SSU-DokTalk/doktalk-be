@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, List
 import base64
 
 from fastapi import APIRouter, Depends, Response, Request
@@ -15,20 +15,27 @@ from app.core.security import (
 )
 from app.core.security import get_token, get_token_payload, encrypt
 from app.db.connection import get_db
+from app.dto.user import BasicRegisterReq, BasicLoginReq
+from app.dto.post import BasicPostRes
 from app.model.User import User
-from app.service.user import basicRegisterService, basicLoginService
-from app.schema.user import BasicRegisterReq, BasicLoginReq
+from app.schema.user import UserSchema
+from app.service.user import (
+    basicRegisterService,
+    basicLoginService,
+    getUserPostsService,
+)
 
 router = APIRouter()
 
 
 @router.post("/register")
-def basicRegisterController(user_data: BasicRegisterReq, db: Session = Depends(get_db)):
+def basicRegisterController(
+    user_data: BasicRegisterReq, db: Session = Depends(get_db)
+) -> int:
     """
     시스템 자체 회원가입 기능
     """
-    userId = basicRegisterService(user_data, db)
-    return userId
+    return basicRegisterService(user_data, db)
 
 
 @router.post("/login")
@@ -49,25 +56,31 @@ def basicLoginController(
         key="Authorization",
         value=encrypt(refresh_token, base64.b64encode),
     )
-    return user
+    return UserSchema.model_validate(user)
+
+
+@router.get("/{user_id}/posts")
+def getUserPostsController(
+    user_id: int, db: Session = Depends(get_db)
+) -> List[BasicPostRes]:
+    return getUserPostsService(user_id, db)
 
 
 @router.get("/me")
 def getMyInfoController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-):
+) -> UserSchema:
     """
     유저 본인의 정보를 반환하는 API
     """
-    user: User = request.state.user
-    return user
+    return UserSchema.model_validate(request.state.user)
 
 
 @router.post("/access-token")
 def refreshAccessToken(
     refresh_token: str, response: Response, db: Session = Depends(get_db)
-):
+) -> None:
     """
     refresh token을 이용해 access token 갱신
     """

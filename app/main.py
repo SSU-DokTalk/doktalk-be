@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
 from starlette.middleware.cors import CORSMiddleware
 
-from app.controller import user
+from app.controller import user, post
 from app.core.middleware import JWTMiddleware
 from app.oauth import oauthController
 
@@ -42,9 +43,13 @@ def createApp() -> FastAPI:
         allow_headers=["*"],
     )
     _app.add_middleware(JWTMiddleware)
+    add_pagination(_app)
 
-    _app.include_router(user.router, prefix="/user")
-    _app.include_router(oauthController.router, prefix="/oauth")
+    _app.include_router(user.router, prefix="/user", tags=["사용자 user"])
+    _app.include_router(post.router, prefix="/post", tags=["게시글 post"])
+    _app.include_router(
+        oauthController.router, prefix="/oauth", tags=["소셜 로그인 oauth"]
+    )
     return _app
 
 

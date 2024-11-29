@@ -1,3 +1,5 @@
+import re
+
 from jwt.exceptions import ExpiredSignatureError
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
@@ -11,33 +13,29 @@ from app.model.User import User
 class JWTMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request, call_next):
-        print(request.url.path)
-        print(request.method)
+        # print(f"{request.method} {request.url.path}")
 
         #
         # 토큰 검증이 필요없다면 넘어가기
         #
+        token_not_needed = list()
         if request.method == "GET":
             token_not_needed = [
-                "/favicon.ico",
-                "/docs",
-                "/openapi.json",
-                "/oauth/kakao",
-                "/oauth/google",
+                r"/(favicon.ico|docs|openapi.json)",
+                r"/oauth/(kakao|google)",
+                r"/post/(recent)",
+                r"/post/([0-9]+)(/(comments))?",
+                r"/user/([0-9]+)/(posts)",
             ]
-            if request.url.path in token_not_needed:
-                return await call_next(request)
         elif request.method == "POST":
-            token_not_needed = ["/user/register", "/user/login", "/user/access-token"]
-            if request.url.path in token_not_needed:
-                return await call_next(request)
+            token_not_needed = [r"/user/(register|login|access-token)"]
         elif request.method == "PUT":
             token_not_needed = []
-            if request.url.path in token_not_needed:
-                return await call_next(request)
         elif request.method == "DELETE":
             token_not_needed = []
-            if request.url.path in token_not_needed:
+
+        for path in token_not_needed:
+            if re.fullmatch(path, request.url.path) is not None:
                 return await call_next(request)
 
         #

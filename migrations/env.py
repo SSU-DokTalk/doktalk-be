@@ -22,7 +22,7 @@ config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.model import User, OAuth, Book
+from app.model import *
 
 target_metadata = Base.metadata
 

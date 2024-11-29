@@ -1,76 +1,84 @@
 from datetime import datetime
 from typing import Union
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    Boolean,
-    func,
-    ForeignKey,
-    Enum,
+from sqlalchemy import Column, func
+from sqlalchemy.dialects.mysql import (
+    INTEGER,
+    VARCHAR,
+    DATETIME,
+    BOOLEAN,
+    ENUM,
 )
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
-from app.oauth.oauthSchema import PROVIDER
-from app.schema.user import BasicRegisterReq
-from app.schema.enums import ROLE
-from pydantic import BaseModel, Field
+from app.model.OAuth import OAuth
+from app.model.Agreement import Agreement
+from app.model.Post import Post
+from app.model.PostComment import PostComment
+from app.model.PostLike import PostLike
+from app.model.Summary import Summary
+from app.model.SummaryComment import SummaryComment
+from app.model.SummaryCommentLike import SummaryCommentLike
+from app.model.Debate import Debate
+from app.model.DebateComment import DebateComment
+from app.model.DebateLike import DebateLike
+from app.model.DebateCommentLike import DebateCommentLike
+from app.model.MyBook import MyBook
+from app.enums import ROLE
 
 
 class User(Base):
     __tablename__ = "user"
 
-    def __init__(self, user_data: BasicRegisterReq):
-        self.email = user_data.email
-        self.password = user_data.password
-        self.name = user_data.name
-        self.gender = user_data.gender
-        self.age = user_data.age
+    def __init__(self, data):
+        if data.__class__.__name__ == "BasicRegisterReq":
+            self.email = data.email
+            self.password = data.password
+            self.profile = data.profile
+            self.name = data.name
+            self.gender = data.gender
+            self.age = data.age
 
     # Keys
-    id: Union[int, Column] = Column(Integer, primary_key=True)
+    id: Union[int, Column] = Column(INTEGER(unsigned=True), primary_key=True)
 
     # Fields
-    email: Union[str, Column] = Column(String(255), unique=True, nullable=False)
-    password: Union[str, Column] = Column(String(255), nullable=False)
-    name: Union[str, Column] = Column(String(255))
-    gender: Union[bool, Column] = Column(Boolean)
-    age: Union[int, Column] = Column(Integer)
+    email: Union[str, Column] = Column(VARCHAR(255), unique=True, nullable=False)
+    password: Union[str, Column] = Column(VARCHAR(255), nullable=False)
+    profile: Union[str, Column] = Column(VARCHAR(255))
+    name: Union[str, Column] = Column(VARCHAR(255))
+    gender: Union[bool, Column] = Column(BOOLEAN)
+    birthday: Union[datetime, Column] = Column(DATETIME)
+    introduction: Union[str, Column] = Column(VARCHAR(255))
+    follower_num: Union[int, Column] = Column(
+        INTEGER, nullable=False, default=0, server_default="0"
+    )
+    following_num: Union[int, Column] = Column(
+        INTEGER, nullable=False, default=0, server_default="0"
+    )
     role: Union[ROLE, Column] = Column(
-        Enum(ROLE), nullable=False, default=ROLE.USER, server_default=ROLE.USER.name
+        ENUM(ROLE), nullable=False, default=ROLE.USER, server_default=ROLE.USER.name
     )
-    createdAt: Union[datetime, Column] = Column(
-        DateTime, nullable=False, server_default=func.now()
+    created_at: Union[datetime, Column] = Column(
+        DATETIME, nullable=False, server_default=func.now()
     )
-    updatedAt: Union[datetime, Column] = Column(
-        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    updated_at: Union[datetime, Column] = Column(
+        DATETIME, nullable=False, server_default=func.now(), onupdate=func.now()
     )
-    isDeleted: Union[bool, Column] = Column(Boolean, nullable=False, default=False)
+    is_deleted: Union[bool, Column] = Column(BOOLEAN, nullable=False, default=False)
 
     # Refs
-    oAuths = relationship("OAuth", back_populates="user")
-
-
-class OAuth(Base):
-    __tablename__ = "oauth"
-
-    def __init__(self, new_id: str, new_userId: int, new_registration: PROVIDER):
-        self.id = new_id
-        self.userId = new_userId
-        self.registration = new_registration
-
-    # Keys
-    id = Column(String(255), primary_key=True)
-    userId = Column(Integer, ForeignKey("user.id"))
-    user = relationship("User", back_populates="oAuths")
-
-    # Fields
-    registration = Column(String(255))
-    createdAt: Union[datetime, Column] = Column(
-        DateTime, nullable=False, server_default=func.now()
-    )
-
-    # Refs
+    oauths = relationship("OAuth", backref="user")
+    agreements = relationship("Agreement", backref="user")
+    posts = relationship("Post", backref="user")
+    post_comments = relationship("PostComment", backref="user")
+    post_likes = relationship("PostLike", backref="user")
+    summaries = relationship("Summary", backref="user")
+    summary_comments = relationship("SummaryComment", backref="user")
+    summary_comment_likes = relationship("SummaryCommentLike", backref="user")
+    debates = relationship("Debate", backref="user")
+    debate_comments = relationship("DebateComment", backref="user")
+    debate_likes = relationship("DebateLike", backref="user")
+    debate_comment_likes = relationship("DebateCommentLike", backref="user")
+    my_books = relationship("MyBook", backref="user")

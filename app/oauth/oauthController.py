@@ -1,6 +1,6 @@
 import base64
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -10,13 +10,14 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     encrypt,
+    cryptContext,
 )
 from app.db.connection import get_db
-from app.model.User import OAuth
-from app.oauth.oauthSchema import *
-from app.oauth.oauthService import *
-from app.schema.user import *
-from app.service.user import *
+from app.model.OAuth import OAuth
+from app.model.User import User
+from app.enums import PROVIDER
+from app.oauth.oauthService import auth_kakao, auth_google
+from app.dto.user import BasicRegisterReq
 
 router = APIRouter()
 
@@ -46,7 +47,7 @@ async def oAuthRegisterController(
         # DB에서 oauth 정보로 user 받아오기
         user = (
             db.query(User)
-            .join(OAuth, OAuth.userId == User.id)
+            .join(OAuth, OAuth.user_id == User.id)
             .filter(OAuth.id == f"{provider.name} {user_data.uid}")
             .first()
         )
@@ -89,4 +90,5 @@ async def oAuthRegisterController(
         )
         return user
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)

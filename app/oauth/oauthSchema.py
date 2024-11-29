@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
-from app.schema.enums import PROVIDER
+from app.enums import PROVIDER
 
 
 class oAuthLoginInfo(BaseModel):
