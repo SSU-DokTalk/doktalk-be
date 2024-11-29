@@ -17,9 +17,9 @@ oauth2_scheme = APIKeyHeader(name="Authorization")
 
 def random_password() -> str:
 
-    letter_length = random.randint(1, 20)
-    digit_length = random.randint(1, 5)
-    punctuation_length = random.randint(1, 5)
+    letter_length = random.randint(5, 20)
+    digit_length = random.randint(3, 5)
+    punctuation_length = random.randint(2, 5)
     string_pool = (
         [random.choice(string.ascii_letters) for _ in range(letter_length)]
         + [random.choice(string.digits) for _ in range(digit_length)]

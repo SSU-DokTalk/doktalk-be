@@ -1,10 +1,12 @@
-from typing import Annotated, List
+from typing import Annotated
 import base64
 
 from fastapi import APIRouter, Depends, Response, Request
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from jwt.exceptions import ExpiredSignatureError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 from starlette.responses import JSONResponse
 
 from app.core.security import (
@@ -18,12 +20,9 @@ from app.db.connection import get_db
 from app.dto.user import BasicRegisterReq, BasicLoginReq
 from app.dto.post import BasicPostRes
 from app.model.User import User
+from app.model.Post import Post
 from app.schema.user import UserSchema
-from app.service.user import (
-    basicRegisterService,
-    basicLoginService,
-    getUserPostsService,
-)
+from app.service.user import basicRegisterService, basicLoginService
 
 router = APIRouter()
 
@@ -62,8 +61,14 @@ def basicLoginController(
 @router.get("/{user_id}/posts")
 def getUserPostsController(
     user_id: int, db: Session = Depends(get_db)
-) -> List[BasicPostRes]:
-    return getUserPostsService(user_id, db)
+) -> Page[BasicPostRes]:
+    return paginate(
+        db.query(Post)
+        .join(Post.user)
+        .options(contains_eager(Post.user))
+        .filter(Post.user_id == user_id)
+        .order_by(Post.created_at.desc())
+    )
 
 
 @router.get("/me")

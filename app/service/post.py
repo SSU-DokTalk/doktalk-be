@@ -7,7 +7,6 @@ from app.dto.post_comment import CreatePostCommentReq
 from app.model.User import User
 from app.model.Post import Post
 from app.model.PostComment import PostComment
-from app.schema.post import PostSchema
 
 
 def createPostService(user: User, post_data: CreatePostReq, db: Session) -> int:
@@ -39,6 +38,12 @@ def createPostCommentService(
         db.add(post_comment)
         db.commit()
         db.refresh(post_comment)
+
+        db.query(Post).filter(Post.id == post_id).update(
+            {Post.comments_num: Post.comments_num + 1}
+        )
+        db.commit()
+
     except IntegrityError:
         raise HTTPException(status_code=404)
     return post_comment.id

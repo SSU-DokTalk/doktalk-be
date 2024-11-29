@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import select
 from sqlalchemy.orm import Session, contains_eager
 
 from app.core.security import oauth2_scheme

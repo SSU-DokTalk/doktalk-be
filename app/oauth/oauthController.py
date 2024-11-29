@@ -16,7 +16,7 @@ from app.db.connection import get_db
 from app.model.OAuth import OAuth
 from app.model.User import User
 from app.enums import PROVIDER
-from app.oauth.oauthService import auth_kakao, auth_google
+from app.oauth.oauthService import auth_kakao, auth_google, auth_naver, auth_facebook
 from app.dto.user import BasicRegisterReq
 
 router = APIRouter()
@@ -28,6 +28,7 @@ async def oAuthRegisterController(
     code: str,
     redirect_uri: str,
     response: Response,
+    state: str | None = None,
     db: Session = Depends(get_db),
 ):
     provider = PROVIDER.from_str(provider.name.lower())
@@ -39,6 +40,10 @@ async def oAuthRegisterController(
             user_data = auth_kakao(code, redirect_uri)
         elif provider == PROVIDER.GOOGLE:
             user_data = auth_google(code, redirect_uri)
+        elif provider == PROVIDER.NAVER:
+            user_data = auth_naver(code, redirect_uri, state)
+        elif provider == PROVIDER.FACEBOOK:
+            user_data = auth_facebook(code, redirect_uri)
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request"

@@ -6,7 +6,7 @@ from app.enums import PROVIDER
 
 
 class oAuthLoginInfo(BaseModel):
-    uid: Optional[int] = Field(description="oauth 유저의 식별 번호")
+    uid: Optional[str] = Field(description="oauth 유저의 식별 번호")
     email: Optional[str] = Field(description="oauth 유저의 email")
     name: Optional[str] = Field(None, description="oauth 유저의 닉네임")
     profile: Optional[str] = Field(None, description="oauth 유저의 프로필 이미지 URL")
