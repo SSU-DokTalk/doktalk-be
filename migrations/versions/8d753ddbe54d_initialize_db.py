@@ -1,8 +1,8 @@
-"""initial_db_struct
+"""initialize db
 
-Revision ID: 2306039e9901
+Revision ID: 8d753ddbe54d
 Revises: f1cd3b5e1dec
-Create Date: 2024-11-29 17:30:35.883005
+Create Date: 2024-11-30 18:00:58.910120
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = '2306039e9901'
+revision: str = '8d753ddbe54d'
 down_revision: Union[str, None] = 'f1cd3b5e1dec'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -64,6 +64,14 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('following',
+    sa.Column('follower_id', mysql.INTEGER(unsigned=True), nullable=False),
+    sa.Column('following_id', mysql.INTEGER(unsigned=True), nullable=False),
+    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['follower_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['following_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('follower_id', 'following_id')
+    )
     op.create_table('my_book',
     sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
@@ -75,8 +83,8 @@ def upgrade() -> None:
     )
     op.create_table('oauth',
     sa.Column('id', mysql.VARCHAR(length=255), nullable=False),
-    sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=True),
-    sa.Column('registration', mysql.VARCHAR(length=255), nullable=True),
+    sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
+    sa.Column('provider', mysql.ENUM('KAKAO', 'NAVER', 'GOOGLE', 'FACEBOOK'), nullable=False),
     sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -125,12 +133,11 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('debate_like',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('debate_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.ForeignKeyConstraint(['debate_id'], ['debate.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'debate_id')
     )
     op.create_table('post_comment',
     sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
@@ -145,12 +152,11 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('post_like',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('post_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.ForeignKeyConstraint(['post_id'], ['post.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'post_id')
     )
     op.create_table('summary_comment',
     sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
@@ -165,36 +171,32 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('summary_like',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('summary_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.ForeignKeyConstraint(['summary_id'], ['summary.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'summary_id')
     )
     op.create_table('debate_comment_like',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('debate_comment_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.ForeignKeyConstraint(['debate_comment_id'], ['debate_comment.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'debate_comment_id')
     )
     op.create_table('post_comment_like',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('post_comment_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.ForeignKeyConstraint(['post_comment_id'], ['post_comment.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'post_comment_id')
     )
     op.create_table('summary_comment_like',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('summary_comment_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.ForeignKeyConstraint(['summary_comment_id'], ['summary_comment.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'summary_comment_id')
     )
     # ### end Alembic commands ###
 
@@ -214,6 +216,7 @@ def downgrade() -> None:
     op.drop_table('post')
     op.drop_table('oauth')
     op.drop_table('my_book')
+    op.drop_table('following')
     op.drop_table('debate')
     op.drop_table('agreement')
     op.drop_table('user')

@@ -25,6 +25,7 @@ from app.model.DebateComment import DebateComment
 from app.model.DebateLike import DebateLike
 from app.model.DebateCommentLike import DebateCommentLike
 from app.model.MyBook import MyBook
+from app.model.Following import Following
 from app.enums import ROLE
 
 
@@ -64,21 +65,49 @@ class User(Base):
         DATETIME, nullable=False, server_default=func.now()
     )
     updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now(), onupdate=func.now()
+        DATETIME, nullable=False, server_default=func.now()
     )
     is_deleted: Union[bool, Column] = Column(BOOLEAN, nullable=False, default=False)
 
     # Refs
-    oauths = relationship("OAuth", backref="user")
-    agreements = relationship("Agreement", backref="user")
-    posts = relationship("Post", backref="user")
-    post_comments = relationship("PostComment", backref="user")
-    post_likes = relationship("PostLike", backref="user")
-    summaries = relationship("Summary", backref="user")
-    summary_comments = relationship("SummaryComment", backref="user")
-    summary_comment_likes = relationship("SummaryCommentLike", backref="user")
-    debates = relationship("Debate", backref="user")
-    debate_comments = relationship("DebateComment", backref="user")
-    debate_likes = relationship("DebateLike", backref="user")
-    debate_comment_likes = relationship("DebateCommentLike", backref="user")
+    oauths = relationship("OAuth", backref="user", cascade="all, delete-orphan")
+    agreements = relationship("Agreement", backref="user", cascade="all, delete-orphan")
+    posts = relationship("Post", backref="user", cascade="all, delete-orphan")
+    post_comments = relationship(
+        "PostComment", backref="user", cascade="all, delete-orphan"
+    )
+    post_likes = relationship("PostLike", backref="user", cascade="all, delete-orphan")
+    summaries = relationship("Summary", backref="user", cascade="all, delete-orphan")
+    summary_comments = relationship(
+        "SummaryComment", backref="user", cascade="all, delete-orphan"
+    )
+    summary_comment_likes = relationship(
+        "SummaryCommentLike", backref="user", cascade="all, delete-orphan"
+    )
+    debates = relationship("Debate", backref="user", cascade="all, delete-orphan")
+    debate_comments = relationship(
+        "DebateComment", backref="user", cascade="all, delete-orphan"
+    )
+    debate_likes = relationship(
+        "DebateLike", backref="user", cascade="all, delete-orphan"
+    )
+    debate_comment_likes = relationship(
+        "DebateCommentLike", backref="user", cascade="all, delete-orphan"
+    )
     my_books = relationship("MyBook", backref="user")
+
+    # Following relationships (users this user is following)
+    following = relationship(
+        "Following",
+        foreign_keys="Following.follower_id",
+        back_populates="follower",
+        cascade="all, delete-orphan",  # Cascade 설정
+    )
+
+    # Follower relationships (users following this user)
+    followers = relationship(
+        "Following",
+        foreign_keys="Following.following_id",
+        back_populates="following",
+        cascade="all, delete-orphan",  # Cascade 설정
+    )

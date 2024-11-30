@@ -3,21 +3,21 @@ from pymysql.err import IntegrityError as PymysqlIntegrityError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, contains_eager
 
-from app.dto.post import CreatePostReq
-from app.dto.post_comment import CreatePostCommentReq
+from app.dto.debate import CreateDebateReq
+from app.dto.debate_comment import CreateDebateCommentReq
 from app.model.User import User
-from app.model.Post import Post
-from app.model.PostLike import PostLike
-from app.model.PostComment import PostComment
-from app.model.PostCommentLike import PostCommentLike
+from app.model.Debate import Debate
+from app.model.DebateLike import DebateLike
+from app.model.DebateComment import DebateComment
+from app.model.DebateCommentLike import DebateCommentLike
 
 
-def getPostService(post_id: int, db: Session):
+def getDebateService(debate_id: int, db: Session):
     res = (
-        db.query(Post)
-        .join(Post.user)
-        .options(contains_eager(Post.user))
-        .filter(Post.id == post_id)
+        db.query(Debate)
+        .join(Debate.user)
+        .options(contains_eager(Debate.user))
+        .filter(Debate.id == debate_id)
         .first()
     )
     if res == None:
@@ -25,36 +25,26 @@ def getPostService(post_id: int, db: Session):
     return res
 
 
-def getPostCommentsService(post_id: int, db: Session):
-    return (
-        db.query(PostComment)
-        .join(PostComment.user)
-        .options(contains_eager(PostComment.user))
-        .filter(PostComment.post_id == post_id)
-        .all()
-    )
-
-
-def createPostService(user: User, post_data: CreatePostReq, db: Session) -> int:
+def createDebateService(user: User, post_data: CreateDebateReq, db: Session) -> int:
     try:
-        post = Post(user=user, data=post_data)
-        db.add(post)
+        debate = Debate(user=user, data=post_data)
+        db.add(debate)
         db.commit()
-        db.refresh(post)
+        db.refresh(debate)
     except IntegrityError:
         raise HTTPException(status_code=404)
-    return post.id
+    return debate.id
 
 
-def createPostLikeService(user: User, post_id: int, db: Session) -> None:
+def createDebateLikeService(user: User, debate_id: int, db: Session) -> None:
     try:
-        post_like = PostLike(user_id=user.id, post_id=post_id)
+        post_like = DebateLike(user_id=user.id, debate_id=debate_id)
         db.add(post_like)
         db.commit()
         db.refresh(post_like)
 
-        db.query(Post).filter(Post.id == post_id).update(
-            {Post.likes_num: Post.likes_num + 1}
+        db.query(Debate).filter(Debate.id == debate_id).update(
+            {Debate.likes_num: Debate.likes_num + 1}
         )
         db.commit()
     except IntegrityError as e:
@@ -74,36 +64,40 @@ def createPostLikeService(user: User, post_id: int, db: Session) -> None:
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
-def createPostCommentService(
-    user: User, post_id: int, post_comment_data: CreatePostCommentReq, db: Session
+def createDebateCommentService(
+    user: User, debate_id: int, debate_comment_data: CreateDebateCommentReq, db: Session
 ) -> int:
     try:
-        post_comment = PostComment(user=user, post_id=post_id, data=post_comment_data)
-        db.add(post_comment)
+        debate_comment = DebateComment(
+            user=user, debate_id=debate_id, data=debate_comment_data
+        )
+        db.add(debate_comment)
         db.commit()
-        db.refresh(post_comment)
+        db.refresh(debate_comment)
 
-        db.query(Post).filter(Post.id == post_id).update(
-            {Post.comments_num: Post.comments_num + 1}
+        db.query(Debate).filter(Debate.id == debate_id).update(
+            {Debate.comments_num: Debate.comments_num + 1}
         )
         db.commit()
 
     except IntegrityError:
         raise HTTPException(status_code=404)
-    return post_comment.id
+    return debate_comment.id
 
 
-def createPostCommentLikeService(user: User, post_comment_id: int, db: Session) -> None:
+def createDebateCommentLikeService(
+    user: User, debate_comment_id: int, db: Session
+) -> None:
     try:
-        post_comment_like = PostCommentLike(
-            user_id=user.id, post_comment_id=post_comment_id
+        debate_comment_like = DebateCommentLike(
+            user_id=user.id, debate_comment_id=debate_comment_id
         )
-        db.add(post_comment_like)
+        db.add(debate_comment_like)
         db.commit()
-        db.refresh(post_comment_like)
+        db.refresh(debate_comment_like)
 
-        db.query(PostComment).filter(PostComment.id == post_comment_id).update(
-            {PostComment.likes_num: PostComment.likes_num + 1}
+        db.query(DebateComment).filter(DebateComment.id == debate_comment_id).update(
+            {DebateComment.likes_num: DebateComment.likes_num + 1}
         )
         db.commit()
     except IntegrityError as e:

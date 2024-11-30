@@ -14,6 +14,20 @@ from app.model.DebateLike import DebateLike
 class Debate(Base):
     __tablename__ = "debate"
 
+    def __init__(self, **kwargs):
+        class_name = kwargs["data"].__class__.__name__
+        if class_name == "CreateDebateReq":
+            user = kwargs["user"]
+            debate_data = kwargs["data"]
+            self.user_id = user.id
+            self.isbn = debate_data.isbn
+            self.location = debate_data.location
+            self.held_at = debate_data.held_at
+            self.title = debate_data.title
+            self.content = debate_data.content
+            self.image1 = debate_data.image1
+            self.image2 = debate_data.image2
+
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
     user_id: Union[int, Column] = Column(
@@ -38,9 +52,13 @@ class Debate(Base):
         DATETIME, nullable=False, server_default=func.now()
     )
     updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now(), onupdate=func.now()
+        DATETIME, nullable=False, server_default=func.now()
     )
 
     # Refs
-    debate_comments = relationship("DebateComment", backref="debate")
-    debate_likes = relationship("DebateLike", backref="debate")
+    debate_comments = relationship(
+        "DebateComment", backref="debate", cascade="all, delete-orphan"
+    )
+    debate_likes = relationship(
+        "DebateLike", backref="debate", cascade="all, delete-orphan"
+    )

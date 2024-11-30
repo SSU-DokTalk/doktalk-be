@@ -27,6 +27,30 @@ from app.service.user import basicRegisterService, basicLoginService
 router = APIRouter()
 
 
+@router.get("/me")
+def getMyInfoController(
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+) -> UserSchema:
+    """
+    유저 본인의 정보를 반환하는 API
+    """
+    return UserSchema.model_validate(request.state.user)
+
+
+@router.get("/{user_id}/posts")
+def getUserPostsController(
+    user_id: int, db: Session = Depends(get_db)
+) -> Page[BasicPostRes]:
+    return paginate(
+        db.query(Post)
+        .join(Post.user)
+        .options(contains_eager(Post.user))
+        .filter(Post.user_id == user_id)
+        .order_by(Post.created_at.desc())
+    )
+
+
 @router.post("/register")
 def basicRegisterController(
     user_data: BasicRegisterReq, db: Session = Depends(get_db)
@@ -56,30 +80,6 @@ def basicLoginController(
         value=encrypt(refresh_token, base64.b64encode),
     )
     return UserSchema.model_validate(user)
-
-
-@router.get("/{user_id}/posts")
-def getUserPostsController(
-    user_id: int, db: Session = Depends(get_db)
-) -> Page[BasicPostRes]:
-    return paginate(
-        db.query(Post)
-        .join(Post.user)
-        .options(contains_eager(Post.user))
-        .filter(Post.user_id == user_id)
-        .order_by(Post.created_at.desc())
-    )
-
-
-@router.get("/me")
-def getMyInfoController(
-    request: Request,
-    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-) -> UserSchema:
-    """
-    유저 본인의 정보를 반환하는 API
-    """
-    return UserSchema.model_validate(request.state.user)
 
 
 @router.post("/access-token")

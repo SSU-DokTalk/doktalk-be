@@ -45,9 +45,11 @@ class Post(Base):
         DATETIME, nullable=False, server_default=func.now()
     )
     updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now(), onupdate=func.now()
+        DATETIME, nullable=False, server_default=func.now()
     )
 
     # Refs
-    post_comments = relationship("PostComment", backref="post")
-    post_likes = relationship("PostLike", backref="post")
+    post_comments = relationship(
+        "PostComment", backref="post", cascade="all, delete-orphan"
+    )
+    post_likes = relationship("PostLike", backref="post", cascade="all, delete-orphan")

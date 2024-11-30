@@ -11,17 +11,55 @@ from app.db.connection import get_db
 from app.dto.post import CreatePostReq, BasicPostRes
 from app.dto.post_comment import CreatePostCommentReq, PostComment
 from app.model.Post import Post
-
 from app.service.post import (
+    getPostService,
+    getPostCommentsService,
     createPostService,
     createPostCommentService,
-    getPostCommentsService,
-    getPostService,
+    createPostLikeService,
+    createPostCommentLikeService,
 )
 
 router = APIRouter()
 
 
+###########
+### GET ###
+###########
+@router.get("/recent", response_model=Page[BasicPostRes])
+def getRecentPostsController(db: Session = Depends(get_db)):
+    """
+    최근 게시글 조회
+    """
+    return paginate(
+        db.query(Post)
+        .join(Post.user)
+        .options(contains_eager(Post.user))
+        .order_by(Post.created_at.desc())
+    )
+
+
+@router.get("/{post_id}")
+def getPostController(post_id: int, db: Session = Depends(get_db)) -> BasicPostRes:
+    """
+    단일 게시글 조회
+    """
+    return BasicPostRes.model_validate(getPostService(post_id, db))
+
+
+@router.get("/{post_id}/comments")
+def getPostCommentsController(
+    post_id: int, db: Session = Depends(get_db)
+) -> List[PostComment]:
+    """
+    게시글의 댓글들 조회
+    """
+    return getPostCommentsService(post_id, db)
+
+
+############
+### POST ###
+############
 @router.post("")
 def createPostController(
     post_data: CreatePostReq,
@@ -49,32 +87,37 @@ def createPostCommentController(
     return createPostCommentService(request.state.user, post_id, post_comment_data, db)
 
 
-@router.get("/recent", response_model=Page[BasicPostRes])
-def getRecentPostsController(db: Session = Depends(get_db)):
-    """
-    최근 게시글 조회
-    """
-    return paginate(
-        db.query(Post)
-        .join(Post.user)
-        .options(contains_eager(Post.user))
-        .order_by(Post.created_at.desc())
-    )
+@router.post("/{post_id}/like")
+def createPostLikeController(
+    post_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    return createPostLikeService(request.state.user, post_id, db)
 
 
-@router.get("/{post_id}/comments")
-def getPostCommentsController(
-    post_id: int, db: Session = Depends(get_db)
-) -> List[PostComment]:
+@router.post("/comment/{post_comment_id}/like")
+def createPostCommentLikeController(
+    post_comment_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
     """
-    게시글의 댓글들 조회
+    게시글의 댓글에 좋아요 달기
     """
-    return getPostCommentsService(post_id, db)
+    return createPostCommentLikeService(request.state.user, post_comment_id, db)
 
 
-@router.get("/{post_id}")
-def getPostController(post_id: int, db: Session = Depends(get_db)) -> BasicPostRes:
-    """
-    단일 게시글 조회
-    """
-    return BasicPostRes.model_validate(getPostService(post_id, db))
+###########
+### PUT ###
+###########
+
+#############
+### PATCH ###
+#############
+
+##############
+### DELETE ###
+##############

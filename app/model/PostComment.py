@@ -40,8 +40,10 @@ class PostComment(Base):
         DATETIME, nullable=False, server_default=func.now()
     )
     updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now(), onupdate=func.now()
+        DATETIME, nullable=False, server_default=func.now()
     )
 
     # Refs
-    post_comment_likes = relationship("PostCommentLike", backref="post_comment")
+    post_comment_likes = relationship(
+        "PostCommentLike", backref="post_comment", cascade="all, delete-orphan"
+    )

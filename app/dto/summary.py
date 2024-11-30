@@ -2,6 +2,9 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from app.schema.summary import SummarySchema
+from app.schema.user import BasicUserSchema
+
 
 class CreateSummaryReq(BaseModel):
     isbn: str = Field()
@@ -14,3 +17,7 @@ class CreateSummaryReq(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class BasicSummaryRes(SummarySchema):
+    user: BasicUserSchema

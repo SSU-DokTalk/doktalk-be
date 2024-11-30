@@ -2,6 +2,8 @@ from .Agreement import Agreement
 from .Debate import Debate
 from .DebateComment import DebateComment
 from .DebateCommentLike import DebateCommentLike
+from .DebateLike import DebateLike
+from .Following import Following
 from .MyBook import MyBook
 from .OAuth import OAuth
 from .Post import Post
@@ -19,6 +21,8 @@ __all__ = [
     "Debate",
     "DebateComment",
     "DebateCommentLike",
+    "DebateLike",
+    "Following",
     "MyBook",
     "OAuth",
     "Post",

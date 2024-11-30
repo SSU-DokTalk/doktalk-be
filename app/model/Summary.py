@@ -53,9 +53,13 @@ class Summary(Base):
         DATETIME, nullable=False, server_default=func.now()
     )
     updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now(), onupdate=func.now()
+        DATETIME, nullable=False, server_default=func.now()
     )
 
     # Refs
-    summary_comments = relationship("SummaryComment", backref="summary")
-    summary_likes = relationship("SummaryLike", backref="summary")
+    summary_comments = relationship(
+        "SummaryComment", backref="summary", cascade="all, delete-orphan"
+    )
+    summary_likes = relationship(
+        "SummaryLike", backref="summary", cascade="all, delete-orphan"
+    )

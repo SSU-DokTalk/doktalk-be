@@ -10,12 +10,14 @@ class DebateCommentLike(Base):
     __tablename__ = "debate_comment_like"
 
     # Keys
-    id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
     user_id: Union[int, Column] = Column(
-        INTEGER(unsigned=True), ForeignKey("user.id"), nullable=False
+        INTEGER(unsigned=True), ForeignKey("user.id"), nullable=False, primary_key=True
     )
     debate_comment_id: Union[int, Column] = Column(
-        BIGINT(unsigned=True), ForeignKey("debate_comment.id"), nullable=False
+        BIGINT(unsigned=True),
+        ForeignKey("debate_comment.id"),
+        nullable=False,
+        primary_key=True,
     )
 
     # Fields
