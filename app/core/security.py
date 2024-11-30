@@ -1,4 +1,3 @@
-import os
 import string
 import random
 import base64
@@ -10,6 +9,8 @@ from jwt.exceptions import ExpiredSignatureError
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
+
+from app.core.config import settings
 
 cryptContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = APIKeyHeader(name="Authorization")
@@ -28,9 +29,6 @@ def random_password() -> str:
     random.shuffle(string_pool)
 
     return "".join(string_pool)
-
-
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 
 class TokenData(BaseModel):
@@ -55,7 +53,9 @@ def create_token(data: TokenData, expire_in: timedelta | None = None) -> str:
     payload = Payload(
         **{"sub": data.userId, "name": data.name, "iat": now, "exp": expire}
     )
-    encoded_jwt = jwt.encode(payload.model_dump(), SECRET_KEY, algorithm="HS256")
+    encoded_jwt = jwt.encode(
+        payload.model_dump(), settings.JWT_SECRET_KEY, algorithm="HS256"
+    )
     return encoded_jwt
 
 
@@ -84,7 +84,7 @@ def get_token(token: str, func: Callable[[str], bytes] = base64.b85decode) -> st
 def validate_token(token: str) -> bool:
     try:
         payload: Payload = Payload(
-            **jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            **jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
         )
     except:
         return False
@@ -97,4 +97,4 @@ def validate_token(token: str) -> bool:
 def get_token_payload(token: str) -> Payload:
     if not validate_token(token):
         return None
-    return Payload(**jwt.decode(token, SECRET_KEY, algorithms=["HS256"]))
+    return Payload(**jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"]))

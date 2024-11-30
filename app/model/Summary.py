@@ -13,6 +13,20 @@ from app.model.SummaryLike import SummaryLike
 class Summary(Base):
     __tablename__ = "summary"
 
+    def __init__(self, **kwargs):
+        class_name = kwargs["data"].__class__.__name__
+        if class_name == "CreateSummaryReq":
+            user = kwargs["user"]
+            summary_data = kwargs["data"]
+            self.user_id = user.id
+            self.isbn = summary_data.isbn
+            self.title = summary_data.title
+            self.free_content = summary_data.free_content
+            self.charged_content = summary_data.charged_content
+            self.price = summary_data.price
+            self.image1 = summary_data.image1
+            self.image2 = summary_data.image2
+
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
     user_id: Union[int, Column] = Column(
