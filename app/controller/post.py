@@ -10,10 +10,8 @@ from app.core.security import oauth2_scheme
 from app.db.connection import get_db
 from app.dto.post import CreatePostReq, BasicPostRes
 from app.dto.post_comment import CreatePostCommentReq, PostComment
-from app.model.User import User
 from app.model.Post import Post
 
-# from app.schema.post import PostSchema
 from app.service.post import (
     createPostService,
     createPostCommentService,

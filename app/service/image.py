@@ -1,11 +1,9 @@
 from io import BytesIO
-from secrets import token_urlsafe
 from typing import Literal
 from uuid import uuid4
 
 from urllib.parse import quote
 from fastapi import UploadFile, File, HTTPException
-from PIL import Image
 
 from app.db.s3 import s3_client
 from app.core.config import settings

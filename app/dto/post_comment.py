@@ -1,5 +1,3 @@
-from typing import Optional, List
-
 from pydantic import BaseModel, Field
 
 from app.schema.post_comment import PostCommentSchema
