@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
+from pydantic import BaseModel, Field, EmailStr, HttpUrl, field_validator
 
 from app.enums import ROLE
 
@@ -13,6 +13,12 @@ class BasicUserSchema(BaseModel):
     name: Optional[str] = None
     role: ROLE = Field(default=ROLE.USER)
     is_deleted: bool = Field(default=False)
+
+    @field_validator("profile", mode="before")
+    def empty_string_to_none(value: Any) -> Optional[str]:
+        if value == "":  # 빈 문자열인 경우 None으로 변환
+            return None
+        return value
 
     class Config:
         from_attributes = True
@@ -33,6 +39,12 @@ class UserSchema(BaseModel):
     created_at: datetime = Field()
     updated_at: datetime = Field()
     is_deleted: bool = Field(default=False)
+
+    @field_validator("profile", mode="before")
+    def empty_string_to_none(value: str) -> Optional[str]:
+        if value == "":  # 빈 문자열인 경우 None으로 변환
+            return None
+        return value
 
     class Config:
         from_attributes = True

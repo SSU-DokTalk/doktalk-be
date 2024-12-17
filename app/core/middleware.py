@@ -26,7 +26,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 r"/oauth/(kakao|google|naver|facebook)",
                 r"/post/((recent)|(([0-9]+)(/(comments))?))",
                 r"/summary/(([0-9]+)(/(comments))?)",
-                r"/user/([0-9]+)/(posts)",
+                r"/user/(([0-9]+)(/(posts))?)",
             ]
         elif request.method == "POST":
             token_not_needed = [r"/user/(register|login|access-token)"]

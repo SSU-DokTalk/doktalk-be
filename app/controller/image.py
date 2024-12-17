@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post("")
 async def uploadImage(
     file: UploadFile,
-    directory: Literal["debate", "post", "summary"],
+    directory: Literal["debate", "post", "summary", "profile"],
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
 ) -> str:

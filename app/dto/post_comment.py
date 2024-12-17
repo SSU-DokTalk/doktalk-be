@@ -13,3 +13,6 @@ class PostComment(PostCommentSchema):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["CreatePostCommentReq", "PostComment"]

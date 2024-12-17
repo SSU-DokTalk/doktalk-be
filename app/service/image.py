@@ -2,11 +2,16 @@ from io import BytesIO
 from typing import Literal
 from uuid import uuid4
 
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from fastapi import UploadFile, File, HTTPException
 
 from app.db.s3 import s3_client
 from app.core.config import settings
+
+
+prefix = (
+    f"https://{settings.AWS_S3_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/"
+)
 
 
 class ImageFile:
@@ -33,7 +38,7 @@ class ImageFile:
         return True
 
     async def upload_to_s3(
-        self, user_id: int, directory: Literal["debate", "post", "summary"]
+        self, user_id: int, directory: Literal["debate", "post", "summary", "profile"]
     ) -> str:
         """
         1. Check if extension is available
@@ -52,10 +57,35 @@ class ImageFile:
                 f"{directory}/{filename}",
                 ExtraArgs={"ContentType": self.data.content_type},
             )
-            return f"https://{settings.AWS_S3_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{quote(f"{directory}/{filename}", safe="~()*!.'")}"
+            return f"{prefix}{quote(f"{directory}/{filename}", safe="~()*!.'")}"
         except Exception as e:
             print(e)
             return str(e)
+
+    @staticmethod
+    async def delete_from_s3(file_path: str) -> bool:
+        """
+        S3 버킷에서 파일 삭제
+        Args:
+            file_path (str): S3 내의 파일 경로 (예: f'{prefix}directory/filename.jpg')
+
+        Returns:
+            bool: 성공 시 True, 실패 시 False
+        """
+        if (
+            not file_path
+            or len(file_path) < len(prefix)
+            or file_path[: len(prefix)] != prefix
+        ):
+            return False
+
+        file_path = unquote("/".join(file_path.split("/")[3:]))
+        try:
+            s3_client.delete_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=file_path)
+            return True
+        except Exception as e:
+            print(e)
+            raise HTTPException(status_code=400)
 
     async def to_bytes(self) -> BytesIO:
         self.byte_data = await self.data.read()

@@ -1,7 +1,7 @@
 from typing import Annotated
 import base64
 
-from fastapi import APIRouter, Depends, Response, Request
+from fastapi import APIRouter, Depends, Response, Request, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -9,6 +9,7 @@ from jwt.exceptions import ExpiredSignatureError
 from sqlalchemy.orm import Session, contains_eager
 from starlette.responses import JSONResponse
 
+from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -17,12 +18,13 @@ from app.core.security import (
 )
 from app.core.security import get_token, get_token_payload, encrypt
 from app.db.connection import get_db
-from app.dto.user import BasicRegisterReq, BasicLoginReq
+from app.dto.user import BasicRegisterReq, BasicLoginReq, UpdateUserInfoReq
 from app.dto.post import BasicPostRes
 from app.model.User import User
 from app.model.Post import Post
 from app.schema.user import UserSchema
-from app.service.user import basicRegisterService, basicLoginService
+from app.service.image import ImageFile
+from app.service.user import *
 
 router = APIRouter()
 
@@ -36,6 +38,14 @@ def getMyInfoController(
     유저 본인의 정보를 반환하는 API
     """
     return UserSchema.model_validate(request.state.user)
+
+
+@router.get("/{user_id}")
+def getUserInfoController(user_id: int, db: Session = Depends(get_db)) -> UserSchema:
+    """
+    유저의 정보를 반환하는 API
+    """
+    return getUserInfoService(user_id, db)
 
 
 @router.get("/{user_id}/posts")
@@ -109,9 +119,41 @@ def refreshAccessToken(
         # 존재하지 않는 유저인 경우
         if user == None:
             return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+
+        # access, refresh token
         access_token = create_access_token(TokenData(userId=user.id, name=user.name))
+        refresh_token = create_refresh_token(TokenData(userId=user.id, name=user.name))
+
         response.headers["Authorization"] = encrypt(access_token)
+        response.set_cookie(
+            key="Authorization",
+            value=encrypt(refresh_token, base64.b64encode),
+        )
     finally:
         db.close()
 
+    return
+
+
+@router.patch("/me")
+async def updateUserInfoController(
+    data: UpdateUserInfoReq,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> UserSchema:
+    return await updateUserProfileInfoService(request.state.user.id, data, db)
+
+
+@router.delete("/profile")
+async def deleteUserProfileController(
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    user: User = request.state.user
+    await ImageFile.delete_from_s3(file_path=user.profile)
+    user_in_db = db.query(User).filter(User.id == user.id).one_or_none()
+    user_in_db.profile = None
+    db.commit()
     return

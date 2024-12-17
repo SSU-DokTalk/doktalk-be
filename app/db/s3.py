@@ -8,3 +8,5 @@ s3_client = client(
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY_ID,
     region_name=settings.AWS_REGION,
 )
+
+__all__ = [s3_client]

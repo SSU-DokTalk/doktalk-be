@@ -13,3 +13,6 @@ class DebateComment(DabateCommentSchema):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["CreateDebateCommentReq", "DebateComment"]

@@ -30,3 +30,5 @@ class Settings:
 
 
 settings = Settings()
+
+__all__ = [settings]

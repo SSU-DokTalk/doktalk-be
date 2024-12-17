@@ -29,6 +29,12 @@ class BasicRegisterReq(BaseModel):
             raise ValueError("Invalid Password")
         return v
 
+    @field_validator("profile", mode="before")
+    def empty_string_to_none(value: str) -> Optional[str]:
+        if value == "":  # 빈 문자열인 경우 None으로 변환
+            return None
+        return value
+
     class Config:
         from_attributes = True
 
@@ -57,3 +63,21 @@ class BasicLoginReq(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UpdateUserInfoReq(BaseModel):
+    profile: Optional[str] = None
+    name: Optional[str] = None
+    introduction: Optional[str] = None
+
+    @field_validator("profile", mode="before")
+    def empty_string_to_none(value: str) -> Optional[str]:
+        if value == "":  # 빈 문자열인 경우 None으로 변환
+            return None
+        return value
+
+    class Config:
+        from_attributes = True
+
+
+__all__ = ["BasicRegisterReq", "BasicLoginReq", "UpdateUserInfoReq"]

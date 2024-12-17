@@ -9,3 +9,6 @@ def get_db() -> Generator:
         yield db
     finally:
         db.close()
+
+
+__all__ = ["get_db"]
