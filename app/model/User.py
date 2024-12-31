@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union
 
-from sqlalchemy import Column, func
+from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import (
     INTEGER,
     VARCHAR,
@@ -10,8 +10,10 @@ from sqlalchemy.dialects.mysql import (
     ENUM,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy_utils import Timestamp
 
 from app.db.session import Base
+from app.db.soft_delete import SoftDeleteMixin
 from app.model.OAuth import OAuth
 from app.model.Agreement import Agreement
 from app.model.Post import Post
@@ -25,11 +27,12 @@ from app.model.DebateComment import DebateComment
 from app.model.DebateLike import DebateLike
 from app.model.DebateCommentLike import DebateCommentLike
 from app.model.MyBook import MyBook
+from app.model.Purchase import Purchase
 from app.model.Following import Following
 from app.enums import ROLE
 
 
-class User(Base):
+class User(Base, Timestamp, SoftDeleteMixin):
     __tablename__ = "user"
 
     def __init__(self, data):
@@ -61,13 +64,6 @@ class User(Base):
     role: Union[ROLE, Column] = Column(
         ENUM(ROLE), nullable=False, default=ROLE.USER, server_default=ROLE.USER.name
     )
-    created_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now()
-    )
-    updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now()
-    )
-    is_deleted: Union[bool, Column] = Column(BOOLEAN, nullable=False, default=False)
 
     # Refs
     oauths = relationship("OAuth", backref="user", cascade="all, delete-orphan")
@@ -95,6 +91,7 @@ class User(Base):
         "DebateCommentLike", backref="user", cascade="all, delete-orphan"
     )
     my_books = relationship("MyBook", backref="user")
+    purchases = relationship("Purchase", backref="user")
 
     # Following relationships (users this user is following)
     following = relationship(

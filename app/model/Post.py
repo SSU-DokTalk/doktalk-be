@@ -1,16 +1,16 @@
-from datetime import datetime
 from typing import Union
 
-from sqlalchemy import Column, ForeignKey, func
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT, DATETIME
+from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT
+from sqlalchemy_utils import Timestamp
 
-from app.db.session import Base
+from app.db.session import Base, CommentLikeBase
 from app.model.PostComment import PostComment
 from app.model.PostLike import PostLike
 
 
-class Post(Base):
+class Post(Base, Timestamp, CommentLikeBase):
     __tablename__ = "post"
 
     def __init__(self, **kwargs):
@@ -27,7 +27,9 @@ class Post(Base):
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
     user_id: Union[int, Column] = Column(
-        INTEGER(unsigned=True), ForeignKey("user.id"), nullable=False
+        INTEGER(unsigned=True),
+        ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
     )
 
     # Fields
@@ -35,18 +37,6 @@ class Post(Base):
     content: Union[str, Column] = Column(TEXT)
     image1: Union[str, Column] = Column(VARCHAR(255))
     image2: Union[str, Column] = Column(VARCHAR(255))
-    likes_num: Union[int, Column] = Column(
-        INTEGER(unsigned=True), nullable=False, default=0, server_default="0"
-    )
-    comments_num: Union[int, Column] = Column(
-        INTEGER(unsigned=True), nullable=False, default=0, server_default="0"
-    )
-    created_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now()
-    )
-    updated_at: Union[datetime, Column] = Column(
-        DATETIME, nullable=False, server_default=func.now()
-    )
 
     # Refs
     post_comments = relationship(

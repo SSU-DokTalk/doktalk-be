@@ -9,8 +9,8 @@ from app.schema.user import BasicUserSchema
 class CreateSummaryReq(BaseModel):
     isbn: str = Field()
     title: str = Field()
-    free_content: Optional[list[str]] = None
-    charged_content: Optional[list[str]] = None
+    free_content: Optional[str] = None
+    charged_content: Optional[str] = None
     price: int = Field()
     image1: Optional[HttpUrl] = None
     image2: Optional[HttpUrl] = None

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, UploadFile, Request
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.core.security import oauth2_scheme
-from app.service.image import ImageFile
+from app.service.image import *
 
 router = APIRouter()
 

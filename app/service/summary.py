@@ -1,15 +1,22 @@
+from typing import List
+
 from fastapi import HTTPException
 from pymysql.err import IntegrityError as PymysqlIntegrityError
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, contains_eager
+from sqlalchemy.orm import contains_eager
 
+from app.db.soft_delete import BaseSession as Session
 from app.dto.summary import CreateSummaryReq
-from app.dto.summary_comment import CreateSummaryCommentReq
+from app.dto.summary_comment import CreateSummaryCommentReq, SummaryComment
+from app.model.Purchase import Purchase
 from app.model.Summary import Summary
 from app.model.SummaryLike import SummaryLike
 from app.model.SummaryComment import SummaryComment
 from app.model.SummaryCommentLike import SummaryCommentLike
 from app.model.User import User
+from app.schema.summary_like import SummaryLikeSchema
+from app.schema.summary_comment import SummaryCommentSchema
+from app.schema.summary_comment_like import SummaryCommentLikeSchema
 
 
 def getSummaryService(summary_id: int, db: Session):
@@ -23,6 +30,57 @@ def getSummaryService(summary_id: int, db: Session):
     if res == None:
         raise HTTPException(status_code=404)
     return res
+
+
+def getSummaryChargedContentService(user_id: int, summary_id: int, db: Session) -> str:
+    res = db.query(Summary).filter(Summary.id == summary_id).first()
+    if res == None:
+        raise HTTPException(status_code=404)
+
+    # 유저가 해당 요약을 구매했는지 확인
+    purchase = (
+        db.query(Purchase)
+        .filter(
+            Purchase.user_id == user_id, Purchase.product_id == "S" + str(summary_id)
+        )
+        .first()
+    )
+    if purchase == None:
+        raise HTTPException(status_code=403)
+    return res.charged_content
+
+
+def getSummaryLikeService(
+    user_id: int, summary_ids: list[int], db: Session
+) -> List[SummaryLikeSchema]:
+    return (
+        db.query(SummaryLike)
+        .filter(SummaryLike.user_id == user_id, SummaryLike.summary_id.in_(summary_ids))
+        .all()
+    )
+
+
+def getSummaryCommentService(summary_id: int, db: Session) -> List[SummaryComment]:
+    return (
+        db.query(SummaryComment)
+        .join(SummaryComment.user)
+        .options(contains_eager(SummaryComment.user))
+        .filter(SummaryComment.summary_id == summary_id)
+        .all()
+    )
+
+
+def getSummaryCommentLikeService(
+    user_id: int, summary_comment_ids: list[int], db: Session
+) -> List[SummaryCommentLikeSchema]:
+    return (
+        db.query(SummaryCommentLike)
+        .filter(
+            SummaryCommentLike.user_id == user_id,
+            SummaryCommentLike.summary_comment_id.in_(summary_comment_ids),
+        )
+        .all()
+    )
 
 
 def createSummaryService(
@@ -136,3 +194,69 @@ def createSummaryCommentLikeService(
 
         # 기타 IntegrityError 처리
         raise HTTPException(status_code=400, detail="Database integrity error")
+
+
+def deleteSummaryLikeService(user_id: int, summary_id: int, db: Session) -> None:
+    summary_like = (
+        db.query(SummaryLike)
+        .filter(SummaryLike.user_id == user_id, SummaryLike.summary_id == summary_id)
+        .first()
+    )
+    if summary_like == None:
+        raise HTTPException(status_code=404)
+
+    db.delete(summary_like)
+    db.commit()
+    return
+
+
+def deleteSummaryCommentService(
+    user_id: int, summary_comment_id: int, db: Session
+) -> None:
+    summary_comment = (
+        db.query(SummaryComment).filter(SummaryComment.id == summary_comment_id).first()
+    )
+    if summary_comment == None:
+        raise HTTPException(status_code=404)
+
+    if summary_comment.user_id != user_id:
+        raise HTTPException(status_code=403)
+
+    db.delete(summary_comment)
+    db.commit()
+    return
+
+
+def deleteSummaryCommentLikeService(
+    user_id: int, summary_comment_id: int, db: Session
+) -> None:
+    summary_comment_like = (
+        db.query(SummaryCommentLike)
+        .filter(
+            SummaryCommentLike.user_id == user_id,
+            SummaryCommentLike.summary_comment_id == summary_comment_id,
+        )
+        .first()
+    )
+    if summary_comment_like == None:
+        raise HTTPException(status_code=404)
+
+    db.delete(summary_comment_like)
+    db.commit()
+    return
+
+
+__all__ = [
+    "getSummaryService",
+    "getSummaryChargedContentService",
+    "getSummaryLikeService",
+    "getSummaryCommentService",
+    "getSummaryCommentLikeService",
+    "createSummaryService",
+    "createSummaryLikeService",
+    "createSummaryCommentService",
+    "createSummaryCommentLikeService",
+    "deleteSummaryLikeService",
+    "deleteSummaryCommentService",
+    "deleteSummaryCommentLikeService",
+]

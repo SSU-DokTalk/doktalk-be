@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
@@ -14,8 +14,8 @@ class PostSchema(BaseModel):
     image2: Optional[HttpUrl] = None
     likes_num: int = Field()
     comments_num: int = Field()
-    created_at: datetime = Field()
-    updated_at: datetime = Field()
+    created: datetime = Field()
+    updated: datetime = Field()
 
     @field_validator("image1", "image2", mode="before")
     def empty_string_to_none(value: str) -> Optional[str]:
@@ -25,3 +25,6 @@ class PostSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["PostSchema"]

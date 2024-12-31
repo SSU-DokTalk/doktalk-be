@@ -9,7 +9,10 @@ class OAuthSchema(BaseModel):
     user_id: int = Field()
 
     registration: Optional[str] = None
-    created_at: datetime = Field()
+    created: datetime = Field()
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["OAuthSchema"]

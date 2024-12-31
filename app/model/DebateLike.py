@@ -11,10 +11,16 @@ class DebateLike(Base):
 
     # Keys
     user_id: Union[int, Column] = Column(
-        INTEGER(unsigned=True), ForeignKey("user.id"), nullable=False, primary_key=True
+        INTEGER(unsigned=True),
+        ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
     )
     debate_id: Union[int, Column] = Column(
-        BIGINT(unsigned=True), ForeignKey("debate.id"), nullable=False, primary_key=True
+        BIGINT(unsigned=True),
+        ForeignKey("debate.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
     )
 
     # Fields

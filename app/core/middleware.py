@@ -1,12 +1,12 @@
 import re
 
 from jwt.exceptions import ExpiredSignatureError
-from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.security import get_token, get_token_payload
 from app.db.connection import get_db
+from app.db.soft_delete import BaseSession as Session
 from app.model.User import User
 
 
@@ -26,11 +26,14 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 r"/oauth/(kakao|google|naver|facebook)",
                 r"/post/((recent)|(([0-9]+)(/(comments))?))",
                 r"/summary/(([0-9]+)(/(comments))?)",
-                r"/user/(([0-9]+)(/(posts))?)",
+                r"/user/(([0-9]+)(/(posts))?|test)",
+                r"/book(s|/([0-9]+))",
             ]
         elif request.method == "POST":
             token_not_needed = [r"/user/(register|login|access-token)"]
         elif request.method == "PUT":
+            token_not_needed = []
+        elif request.method == "PATCH":
             token_not_needed = []
         elif request.method == "DELETE":
             token_not_needed = []
@@ -63,7 +66,16 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
         db: Session = next(get_db())
         try:
-            user = db.query(User).filter(User.id == payload.sub).first()
+            user = (
+                db.query(
+                    User,
+                    with_deleted=(
+                        True if request.url.path == "/user/restore" else False
+                    ),
+                )
+                .filter(User.id == payload.sub)
+                .first()
+            )
             # 존재하지 않는 유저인 경우
             if user == None:
                 return JSONResponse(status_code=401, content={"detail": "Wrong Token"})

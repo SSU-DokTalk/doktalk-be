@@ -1,8 +1,9 @@
 from fastapi import HTTPException
 from pymysql.err import IntegrityError as PymysqlIntegrityError
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, contains_eager
+from sqlalchemy.orm import contains_eager
 
+from app.db.soft_delete import BaseSession as Session
 from app.dto.debate import CreateDebateReq
 from app.dto.debate_comment import CreateDebateCommentReq
 from app.model.User import User
@@ -115,3 +116,12 @@ def createDebateCommentLikeService(
 
         # 기타 IntegrityError 처리
         raise HTTPException(status_code=400, detail="Database integrity error")
+
+
+__all__ = [
+    "getDebateService",
+    "createDebateService",
+    "createDebateLikeService",
+    "createDebateCommentService",
+    "createDebateCommentLikeService",
+]

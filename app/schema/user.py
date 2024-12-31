@@ -36,8 +36,9 @@ class UserSchema(BaseModel):
     follower_num: int = Field()
     following_num: int = Field()
     role: ROLE = Field(default=ROLE.USER)
-    created_at: datetime = Field()
-    updated_at: datetime = Field()
+    created: datetime = Field()
+    updated: datetime = Field()
+    deleted_at: Optional[datetime] = None
     is_deleted: bool = Field(default=False)
 
     @field_validator("profile", mode="before")
@@ -48,3 +49,6 @@ class UserSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["UserSchema", "BasicUserSchema"]

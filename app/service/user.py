@@ -1,12 +1,15 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from pymysql.err import IntegrityError as PymysqlIntegrityError
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import contains_eager
+from fastapi_pagination import Page, paginate
 
 from app.core.security import cryptContext
-from app.core.config import settings
-from app.db.s3 import s3_client
-from app.dto.user import BasicLoginReq, BasicRegisterReq, UpdateUserInfoReq
+from app.db.soft_delete import BaseSession as Session
+from app.dto.user import *
 from app.model.User import User
-from app.service.image import ImageFile
+from app.model.Following import Following
+from app.service.image import *
 
 
 def basicRegisterService(user_data: BasicRegisterReq, db: Session) -> int:
@@ -16,13 +19,27 @@ def basicRegisterService(user_data: BasicRegisterReq, db: Session) -> int:
         db.add(user)
         db.commit()
         db.refresh(user)
-    except:
-        raise HTTPException(status_code=400)
+    except IntegrityError as e:
+        # 오류 메시지 분석
+        if isinstance(e.orig, PymysqlIntegrityError):
+            sql_code = e.orig.args[0]  # MySQL 상태 코드 (1452 또는 1062)
+
+            if sql_code == 1062:  # 중복 키 제약 조건 위반
+                raise HTTPException(
+                    status_code=409, detail="Duplicate entry for entity like"
+                )
+
+        # 기타 IntegrityError 처리
+        raise HTTPException(status_code=400, detail="Database integrity error")
     return user.id
 
 
 def basicLoginService(user_data: BasicLoginReq, db: Session) -> User:
-    user = db.query(User).filter(User.email == user_data.email).one_or_none()
+    user = (
+        db.query(User, with_deleted=True)
+        .filter(User.email == user_data.email)
+        .one_or_none()
+    )
     if user == None:
         raise HTTPException(status_code=404)
     if not cryptContext.verify(user_data.password, user.password):
@@ -54,9 +71,24 @@ async def updateUserProfileInfoService(
     return user
 
 
+def followUserService(user_id: int, target_user_id: int, db: Session) -> None:
+    user = db.query(User).filter(User.id == user_id).one_or_none()
+    target_user = db.query(User).filter(User.id == target_user_id).one_or_none()
+    if target_user == None:
+        raise HTTPException(status_code=404)
+
+    following_info = Following(follower_id=user_id, following_id=target_user_id)
+    db.add(following_info)
+    user.following_num += 1
+    target_user.follower_num += 1
+    db.commit()
+    return
+
+
 __all__ = [
     "basicRegisterService",
     "basicLoginService",
     "getUserInfoService",
+    "followUserService",
     "updateUserProfileInfoService",
 ]

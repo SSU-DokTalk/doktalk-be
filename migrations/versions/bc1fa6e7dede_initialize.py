@@ -1,8 +1,8 @@
-"""initialize db
+"""initialize
 
-Revision ID: 8d753ddbe54d
-Revises: f1cd3b5e1dec
-Create Date: 2024-11-30 18:00:58.910120
+Revision ID: bc1fa6e7dede
+Revises: 
+Create Date: 2024-12-31 13:46:42.939422
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = '8d753ddbe54d'
-down_revision: Union[str, None] = 'f1cd3b5e1dec'
+revision: str = 'bc1fa6e7dede'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -32,9 +32,10 @@ def upgrade() -> None:
     sa.Column('follower_num', mysql.INTEGER(), server_default='0', nullable=False),
     sa.Column('following_num', mysql.INTEGER(), server_default='0', nullable=False),
     sa.Column('role', mysql.ENUM('ADMIN', 'USER'), server_default='USER', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('is_deleted', sa.BOOLEAN(), nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.Column('is_deleted', sa.BOOLEAN(), server_default='0', nullable=False),
+    sa.Column('deleted_at', mysql.DATETIME(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
@@ -42,9 +43,9 @@ def upgrade() -> None:
     sa.Column('id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('term', mysql.BIT(length=3), nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('debate',
@@ -52,41 +53,44 @@ def upgrade() -> None:
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('isbn', mysql.VARCHAR(length=13), nullable=False),
     sa.Column('location', mysql.VARCHAR(length=255), nullable=True),
+    sa.Column('link', mysql.VARCHAR(length=255), nullable=True),
     sa.Column('held_at', mysql.DATETIME(), nullable=True),
     sa.Column('title', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('content', mysql.TEXT(), nullable=True),
     sa.Column('image1', mysql.VARCHAR(length=255), nullable=True),
     sa.Column('image2', mysql.VARCHAR(length=255), nullable=True),
-    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
     sa.Column('comments_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('following',
     sa.Column('follower_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('following_id', mysql.INTEGER(unsigned=True), nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['follower_id'], ['user.id'], ),
-    sa.ForeignKeyConstraint(['following_id'], ['user.id'], ),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['follower_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['following_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('follower_id', 'following_id')
     )
     op.create_table('my_book',
     sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('isbn', mysql.VARCHAR(length=13), nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('oauth',
     sa.Column('id', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('provider', mysql.ENUM('KAKAO', 'NAVER', 'GOOGLE', 'FACEBOOK'), nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('post',
@@ -96,28 +100,41 @@ def upgrade() -> None:
     sa.Column('content', mysql.TEXT(), nullable=True),
     sa.Column('image1', mysql.VARCHAR(length=255), nullable=True),
     sa.Column('image2', mysql.VARCHAR(length=255), nullable=True),
-    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
     sa.Column('comments_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('purchase',
+    sa.Column('id', mysql.INTEGER(unsigned=True), nullable=False),
+    sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
+    sa.Column('product_id', mysql.VARCHAR(length=21), nullable=False),
+    sa.Column('content', mysql.VARCHAR(length=255), nullable=False),
+    sa.Column('price', mysql.INTEGER(), nullable=False),
+    sa.Column('quantity', mysql.INTEGER(), nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_purchase_product_id'), 'purchase', ['product_id'], unique=False)
     op.create_table('summary',
     sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('isbn', mysql.VARCHAR(length=13), nullable=False),
     sa.Column('title', mysql.VARCHAR(length=255), nullable=False),
-    sa.Column('free_content', mysql.JSON(), nullable=True),
-    sa.Column('charged_content', mysql.JSON(), nullable=True),
+    sa.Column('free_content', mysql.VARCHAR(length=1000), nullable=True),
+    sa.Column('charged_content', mysql.MEDIUMTEXT(), nullable=True),
     sa.Column('price', mysql.INTEGER(), server_default='0', nullable=False),
     sa.Column('image1', mysql.VARCHAR(length=255), nullable=True),
     sa.Column('image2', mysql.VARCHAR(length=255), nullable=True),
-    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
     sa.Column('comments_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('debate_comment',
@@ -125,18 +142,18 @@ def upgrade() -> None:
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('debate_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('content', mysql.VARCHAR(length=1024), nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
     sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['debate_id'], ['debate.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['debate_id'], ['debate.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('debate_like',
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('debate_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.ForeignKeyConstraint(['debate_id'], ['debate.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['debate_id'], ['debate.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_id', 'debate_id')
     )
     op.create_table('post_comment',
@@ -144,18 +161,18 @@ def upgrade() -> None:
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('post_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('content', mysql.VARCHAR(length=1024), nullable=False),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
     sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['post_id'], ['post.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['post_id'], ['post.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('post_like',
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('post_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.ForeignKeyConstraint(['post_id'], ['post.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['post_id'], ['post.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_id', 'post_id')
     )
     op.create_table('summary_comment',
@@ -163,39 +180,39 @@ def upgrade() -> None:
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('summary_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('content', mysql.VARCHAR(length=1024), nullable=False),
-    sa.Column('likes_num', mysql.INTEGER(), server_default='0', nullable=False),
-    sa.Column('created_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', mysql.DATETIME(), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['summary_id'], ['summary.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('created', sa.DateTime(), nullable=False),
+    sa.Column('updated', sa.DateTime(), nullable=False),
+    sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
+    sa.ForeignKeyConstraint(['summary_id'], ['summary.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('summary_like',
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('summary_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.ForeignKeyConstraint(['summary_id'], ['summary.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['summary_id'], ['summary.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_id', 'summary_id')
     )
     op.create_table('debate_comment_like',
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('debate_comment_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.ForeignKeyConstraint(['debate_comment_id'], ['debate_comment.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['debate_comment_id'], ['debate_comment.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_id', 'debate_comment_id')
     )
     op.create_table('post_comment_like',
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('post_comment_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.ForeignKeyConstraint(['post_comment_id'], ['post_comment.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['post_comment_id'], ['post_comment.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_id', 'post_comment_id')
     )
     op.create_table('summary_comment_like',
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('summary_comment_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.ForeignKeyConstraint(['summary_comment_id'], ['summary_comment.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['summary_comment_id'], ['summary_comment.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('user_id', 'summary_comment_id')
     )
     # ### end Alembic commands ###
@@ -213,6 +230,8 @@ def downgrade() -> None:
     op.drop_table('debate_like')
     op.drop_table('debate_comment')
     op.drop_table('summary')
+    op.drop_index(op.f('ix_purchase_product_id'), table_name='purchase')
+    op.drop_table('purchase')
     op.drop_table('post')
     op.drop_table('oauth')
     op.drop_table('my_book')

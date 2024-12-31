@@ -11,11 +11,14 @@ class PostCommentLike(Base):
 
     # Keys
     user_id: Union[int, Column] = Column(
-        INTEGER(unsigned=True), ForeignKey("user.id"), nullable=False, primary_key=True
+        INTEGER(unsigned=True),
+        ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
     )
     post_comment_id: Union[int, Column] = Column(
         BIGINT(unsigned=True),
-        ForeignKey("post_comment.id"),
+        ForeignKey("post_comment.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         primary_key=True,
     )

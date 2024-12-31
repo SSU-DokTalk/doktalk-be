@@ -6,10 +6,9 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from jwt.exceptions import ExpiredSignatureError
-from sqlalchemy.orm import Session, contains_eager
+from sqlalchemy.orm import contains_eager
 from starlette.responses import JSONResponse
 
-from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -18,17 +17,25 @@ from app.core.security import (
 )
 from app.core.security import get_token, get_token_payload, encrypt
 from app.db.connection import get_db
+from app.db.soft_delete import BaseSession as Session
 from app.dto.user import BasicRegisterReq, BasicLoginReq, UpdateUserInfoReq
 from app.dto.post import BasicPostRes
-from app.model.User import User
+from app.dto.following import BasicFollowingSchema, BasicFollowerSchema
+from app.model.Following import Following
 from app.model.Post import Post
-from app.schema.user import UserSchema
+from app.model.User import User
+from app.schema.user import UserSchema, BasicUserSchema
+from app.schema.purchase import PurchaseSchema
 from app.service.image import ImageFile
 from app.service.user import *
+from app.service.purchase import getPurchasesService
 
 router = APIRouter()
 
 
+###########
+### GET ###
+###########
 @router.get("/me")
 def getMyInfoController(
     request: Request,
@@ -38,6 +45,18 @@ def getMyInfoController(
     유저 본인의 정보를 반환하는 API
     """
     return UserSchema.model_validate(request.state.user)
+
+
+@router.get("/purchase")
+def getPurchasesController(
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> PurchaseSchema:
+    """
+    본인의 구매 내역 조회
+    """
+    return getPurchasesService(request.state.user.id, db)
 
 
 @router.get("/{user_id}")
@@ -57,11 +76,68 @@ def getUserPostsController(
         .join(Post.user)
         .options(contains_eager(Post.user))
         .filter(Post.user_id == user_id)
-        .order_by(Post.created_at.desc())
+        .order_by(Post.created.desc())
     )
 
 
-@router.post("/register")
+@router.get("/{user_id}/followers")
+def getFollowersController(
+    user_id: int,
+    authozation: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> Page[BasicFollowerSchema]:
+    """
+    user_id의 팔로워 목록 조회
+    """
+    return paginate(
+        db.query(Following)
+        .join(User, Following.follower_id == User.id)
+        .filter(Following.following_id == user_id)
+        .options(contains_eager(Following.follower))
+        .order_by(Following.created.desc())
+    )
+
+
+@router.get("/{user_id}/followings")
+def getFollowersController(
+    user_id: int,
+    authozation: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> Page[BasicFollowingSchema]:
+    """
+    user_id의 팔로잉 목록 조회
+    """
+    return paginate(
+        db.query(Following)
+        .join(User, Following.following_id == User.id)
+        .filter(Following.follower_id == user_id)
+        .options(contains_eager(Following.following))
+        .order_by(Following.created.desc())
+    )
+
+
+############
+### POST ###
+############
+@router.post("/restore", status_code=201)
+def restoreUserController(
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    user = (
+        db.query(User, with_deleted=True)
+        .filter(User.id == request.state.user.id)
+        .one_or_none()
+    )
+    if not user.is_deleted:
+        raise HTTPException(status_code=400)
+    user.restore()
+    db.commit()
+    return
+
+
+@router.post("/register", status_code=201)
 def basicRegisterController(
     user_data: BasicRegisterReq, db: Session = Depends(get_db)
 ) -> int:
@@ -71,7 +147,7 @@ def basicRegisterController(
     return basicRegisterService(user_data, db)
 
 
-@router.post("/login")
+@router.post("/login", status_code=201)
 def basicLoginController(
     user_data: BasicLoginReq, response: Response, db: Session = Depends(get_db)
 ):
@@ -92,7 +168,7 @@ def basicLoginController(
     return UserSchema.model_validate(user)
 
 
-@router.post("/access-token")
+@router.post("/access-token", status_code=201)
 def refreshAccessToken(
     refresh_token: str, response: Response, db: Session = Depends(get_db)
 ) -> None:
@@ -115,7 +191,7 @@ def refreshAccessToken(
 
     db: Session = next(get_db())
     try:
-        user = db.query(User).filter(User.id == payload.sub).first()
+        user = db.query(User, with_deleted=True).filter(User.id == payload.sub).first()
         # 존재하지 않는 유저인 경우
         if user == None:
             return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
@@ -135,6 +211,27 @@ def refreshAccessToken(
     return
 
 
+@router.post("/follow/{target_user_id}", status_code=201)
+def followUserController(
+    target_user_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    유저 팔로우
+    """
+    return followUserService(request.state.user.id, target_user_id, db)
+
+
+###########
+### PUT ###
+###########
+
+
+#############
+### PATCH ###
+#############
 @router.patch("/me")
 async def updateUserInfoController(
     data: UpdateUserInfoReq,
@@ -145,6 +242,9 @@ async def updateUserInfoController(
     return await updateUserProfileInfoService(request.state.user.id, data, db)
 
 
+##############
+### DELETE ###
+##############
 @router.delete("/profile")
 async def deleteUserProfileController(
     request: Request,
@@ -156,4 +256,19 @@ async def deleteUserProfileController(
     user_in_db = db.query(User).filter(User.id == user.id).one_or_none()
     user_in_db.profile = None
     db.commit()
+    return
+
+
+@router.delete("/me")
+def deleteUserController(
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    user = db.query(User).filter(User.id == request.state.user.id).one_or_none()
+    if user.is_deleted:
+        raise HTTPException(status_code=404)
+    if user:
+        user.soft_delete()
+        db.commit()
     return

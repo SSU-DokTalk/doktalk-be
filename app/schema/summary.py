@@ -10,15 +10,15 @@ class SummarySchema(BaseModel):
 
     isbn: str = Field()
     title: str = Field()
-    free_content: Optional[list[str]] = None
-    charged_content: Optional[list[str]] = None
+    free_content: Optional[str] = None
+    charged_content: Optional[str] = None
     price: int = Field()
     image1: Optional[HttpUrl] = None
     image2: Optional[HttpUrl] = None
     likes_num: int = Field()
     comments_num: int = Field()
-    created_at: datetime = Field()
-    updated_at: datetime = Field()
+    created: datetime = Field()
+    updated: datetime = Field()
 
     @field_validator("image1", "image2", mode="before")
     def empty_string_to_none(value: str) -> Optional[str]:
@@ -28,3 +28,6 @@ class SummarySchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["SummarySchema"]

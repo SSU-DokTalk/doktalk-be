@@ -7,3 +7,6 @@ class DebateCommentLikeSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["DebateCommentLikeSchema"]

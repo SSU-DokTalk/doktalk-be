@@ -1,23 +1,14 @@
-from typing import Annotated, List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials
-from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy.orm import Session, contains_eager
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
-from app.dto.debate import CreateDebateReq, BasicDebateRes
-from app.dto.debate_comment import CreateDebateCommentReq, DebateComment
-from app.model.Debate import Debate
-from app.service.debate import (
-    getDebateService,
-    createDebateService,
-    createDebateCommentService,
-    createDebateLikeService,
-    createDebateCommentLikeService,
-)
+from app.db.soft_delete import BaseSession as Session
+from app.dto.debate import *
+from app.dto.debate_comment import *
+from app.service.debate import *
 
 router = APIRouter()
 

@@ -1,7 +1,8 @@
 import base64
 
 from fastapi import APIRouter, Depends, Response, HTTPException
-from sqlalchemy.orm import Session
+
+# from sqlalchemy.orm import Session
 from starlette import status
 
 from app.core.security import (
@@ -17,6 +18,7 @@ from app.model.OAuth import OAuth
 from app.model.User import User
 from app.enums import PROVIDER
 from app.oauth.oauthService import auth_kakao, auth_google, auth_naver, auth_facebook
+from app.db.soft_delete import BaseSession as Session
 from app.dto.user import BasicRegisterReq
 
 router = APIRouter()
@@ -51,7 +53,7 @@ async def oAuthRegisterController(
 
         # DB에서 oauth 정보로 user 받아오기
         user = (
-            db.query(User)
+            db.query(User, with_deleted=True)
             .join(OAuth, OAuth.user_id == User.id)
             .filter(OAuth.id == f"{provider.name} {user_data.uid}")
             .first()
@@ -60,7 +62,12 @@ async def oAuthRegisterController(
         # 해당 oauth 정보가 없는 경우
         if user == None:
             # 동일한 이메일로 가입된 계정이 있는지 확인
-            user = db.query(User).filter(User.email == user_data.email).first()
+            user = (
+                db.query(User, with_deleted=True)
+                .filter(User.email == user_data.email)
+                .first()
+            )
+
             if user == None:
                 # 해당 이메일로 가입된 계정이 없다면 새로운 유저를 생성
                 user = User(

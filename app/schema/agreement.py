@@ -8,8 +8,11 @@ class AgreementSchema(BaseModel):
     user_id: int = Field()
 
     term: int = Field()
-    created_at: datetime = Field()
-    updated_at: datetime = Field()
+    created: datetime = Field()
+    updated: datetime = Field()
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["AgreementSchema"]

@@ -22,17 +22,26 @@ class ImageFile:
         self.data = data
 
     def extension(self) -> str:
+        """
+        이미지 파일의 확장자 반환
+        """
         return self.data.filename.split(".")[-1]
 
     async def validate(self) -> bool:
         return self.validate_type() and await self.validate_size()
 
     def validate_type(self) -> bool:
+        """
+        이미지 파일의 확장자가 jpg, jpeg, png인지 확인
+        """
         if self.extension().lower() not in ["jpg", "jpeg", "png"]:
             return False
         return True
 
     async def validate_size(self) -> bool:
+        """
+        이미지 파일의 크기가 10MB를 넘지 않는지 확인
+        """
         if len(self.byte_data) > 10 * 1024 * 1024:
             return False
         return True
@@ -89,3 +98,8 @@ class ImageFile:
 
     async def to_bytes(self) -> BytesIO:
         self.byte_data = await self.data.read()
+
+
+__all__ = [
+    "ImageFile",
+]

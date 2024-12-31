@@ -11,8 +11,11 @@ class DabateCommentSchema(BaseModel):
     dabate_id: int = Field()
     content: Optional[str] = None
     likes_num: int = Field()
-    created_at: datetime = Field()
-    updated_at: datetime = Field()
+    created: datetime = Field()
+    updated: datetime = Field()
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["DabateCommentSchema"]

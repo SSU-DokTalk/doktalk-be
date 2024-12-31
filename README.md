@@ -41,7 +41,7 @@ pip install -r $(FILENAME)
 ### Alembic
 
 ```bash
-alembic revision --autogenerate -m "message"
+alembic revision --autogenerate -m "message" # SQL 자동 생성 // DB 갱신은 별도로 진행
 ```
 
 ```bash

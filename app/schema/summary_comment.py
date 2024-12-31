@@ -10,8 +10,11 @@ class SummaryCommentSchema(BaseModel):
 
     content: str = Field()
     likes_num: int = Field()
-    created_at: datetime = Field()
-    updated_at: datetime = Field()
+    created: datetime = Field()
+    updated: datetime = Field()
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["SummaryCommentSchema"]

@@ -11,11 +11,14 @@ class SummaryLike(Base):
 
     # Keys
     user_id: Union[int, Column] = Column(
-        INTEGER(unsigned=True), ForeignKey("user.id"), nullable=False, primary_key=True
+        INTEGER(unsigned=True),
+        ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
     )
     summary_id: Union[int, Column] = Column(
         BIGINT(unsigned=True),
-        ForeignKey("summary.id"),
+        ForeignKey("summary.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         primary_key=True,
     )
