@@ -12,13 +12,14 @@ from app.core.security import (
     create_refresh_token,
     encrypt,
     cryptContext,
+    REFRESH_TOKEN_EXPIRATION,
 )
 from app.db.connection import get_db
 from app.model.OAuth import OAuth
 from app.model.User import User
 from app.enums import PROVIDER
 from app.oauth.oauthService import auth_kakao, auth_google, auth_naver, auth_facebook
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.user import BasicRegisterReq
 
 router = APIRouter()
@@ -99,6 +100,7 @@ async def oAuthRegisterController(
         response.set_cookie(
             key="Authorization",
             value=encrypt(refresh_token, base64.b64encode),
+            expires=int(REFRESH_TOKEN_EXPIRATION.total_seconds()),
         )
         return user
     except Exception as e:

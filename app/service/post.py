@@ -2,10 +2,11 @@ from typing import List
 
 from fastapi import HTTPException
 from pymysql.err import IntegrityError as PymysqlIntegrityError
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.post import CreatePostReq
 from app.dto.post_comment import CreatePostCommentReq
 from app.model.User import User
@@ -32,12 +33,14 @@ def getPostService(post_id: int, db: Session):
 
 def getPostLikeService(
     post_ids: list[int], user_id: int, db: Session
-) -> List[PostLikeSchema]:
-    return (
-        db.query(PostLike)
+) -> List[list[bool]]:
+    res = [
+        result[0]
+        for result in db.query(PostLike.post_id)
         .filter(PostLike.user_id == user_id, PostLike.post_id.in_(post_ids))
         .all()
-    )
+    ]
+    return [(id in res) for id in post_ids]
 
 
 def getPostCommentsService(post_id: int, db: Session):
@@ -190,15 +193,20 @@ def deletePostService(user: User, post_id: int, db: Session) -> None:
 
 def deletePostLikeService(user: User, post_id: int, db: Session) -> None:
     try:
-        db.query(PostLike).filter(
-            PostLike.user_id == user.id, PostLike.post_id == post_id
-        ).delete()
+        res = (
+            db.query(PostLike)
+            .filter(PostLike.user_id == user.id, PostLike.post_id == post_id)
+            .delete()
+        )
+        if res == 0:
+            raise HTTPException(status_code=404)
         db.query(Post).filter(Post.id == post_id).update(
             {Post.likes_num: Post.likes_num - 1}
         )
         db.commit()
     except IntegrityError:
         raise HTTPException(status_code=404)
+    return
 
 
 def deletePostCommentService(user: User, post_comment_id: int, db: Session) -> None:

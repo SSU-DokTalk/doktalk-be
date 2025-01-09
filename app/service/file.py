@@ -14,7 +14,7 @@ prefix = (
 )
 
 
-class ImageFile:
+class FileManager:
     data: UploadFile | None = File(None)
     byte_data: bytes | None = None
 
@@ -25,17 +25,17 @@ class ImageFile:
         """
         이미지 파일의 확장자 반환
         """
-        return self.data.filename.split(".")[-1]
+        return self.data.filename.split(".")[-1].lower()
 
     async def validate(self) -> bool:
         return self.validate_type() and await self.validate_size()
 
     def validate_type(self) -> bool:
         """
-        이미지 파일의 확장자가 jpg, jpeg, png인지 확인
+        이미지 파일의 확장자가 acceptable한지 확인
         """
-        if self.extension().lower() not in ["jpg", "jpeg", "png"]:
-            return False
+        if self.extension().lower() not in ["jpg", "jpeg", "png", "gif", "pdf"]:
+            raise HTTPException(status_code=415)
         return True
 
     async def validate_size(self) -> bool:
@@ -43,7 +43,7 @@ class ImageFile:
         이미지 파일의 크기가 10MB를 넘지 않는지 확인
         """
         if len(self.byte_data) > 10 * 1024 * 1024:
-            return False
+            raise HTTPException(status_code=413)
         return True
 
     async def upload_to_s3(
@@ -57,7 +57,7 @@ class ImageFile:
         """
         await self.to_bytes()
         if not await self.validate():
-            raise HTTPException(status_code=413)
+            raise HTTPException(status_code=400)
         filename = f"{user_id}_{str(uuid4())}.{self.extension()}"
         try:
             s3_client.upload_fileobj(
@@ -101,5 +101,5 @@ class ImageFile:
 
 
 __all__ = [
-    "ImageFile",
+    "FileManager",
 ]

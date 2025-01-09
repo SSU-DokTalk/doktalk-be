@@ -39,3 +39,6 @@ class Following(Base, Timestamp):
         foreign_keys=[following_id],
         back_populates="followers",
     )
+
+
+__all__ = ["Following"]

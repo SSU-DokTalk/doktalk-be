@@ -6,14 +6,14 @@ import json
 from fastapi import HTTPException
 
 from app.core.config import settings
-from app.schema.book import BookResponseSchema
+from app.schema.book_api import BookAPIResponseSchema
 
 NAVER_BOOK_API_BASE_URL = "https://openapi.naver.com/v1/search"
 
 
-def getBooksService(
+def getAPIBooksService(
     query: str, start: int = 1, sort: Literal["sim", "date"] = "sim"
-) -> BookResponseSchema:
+) -> BookAPIResponseSchema:
     query = urllib.parse.quote(query)
     url = f"{NAVER_BOOK_API_BASE_URL}/book.json?query={query}&display=10&start={start}&sort={sort}"
     req = urllib.request.Request(url)
@@ -23,10 +23,16 @@ def getBooksService(
     if res.getcode() != 200:
         raise HTTPException(f"Naver Book API Error {res.getcode()}")
     data = json.loads(res.read().decode("utf-8"))
-    return data
+    return {
+        "total": data["total"],
+        "items": data["items"],
+        "page": data["start"],
+        "pages": data["total"] // data["display"]
+        + bool(data["total"] % data["display"]),
+    }
 
 
-def getBookDetailService(isbn: str) -> BookResponseSchema:
+def getAPIBookDetailService(isbn: str) -> BookAPIResponseSchema:
     url = f"{NAVER_BOOK_API_BASE_URL}/book_adv.json?d_isbn={isbn}&display=1&start=1"
     req = urllib.request.Request(url)
     req.add_header("X-Naver-Client-Id", settings.NAVER_CLIENT_ID)
@@ -35,10 +41,16 @@ def getBookDetailService(isbn: str) -> BookResponseSchema:
     if res.getcode() != 200:
         raise HTTPException(f"Naver Book API Error {res.getcode()}")
     data = json.loads(res.read().decode("utf-8"))
-    return data
+    return {
+        "total": data["total"],
+        "items": data["items"],
+        "page": data["start"],
+        "pages": data["total"] // data["display"]
+        + bool(data["total"] % data["display"]),
+    }
 
 
 __all__ = [
-    "getBooksService",
-    "getBookDetailService",
+    "getAPIBooksService",
+    "getAPIBookDetailService",
 ]

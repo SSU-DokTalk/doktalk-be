@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
@@ -9,13 +9,14 @@ from app.schema.post import PostSchema
 class CreatePostReq(BaseModel):
     title: str = Field(examples=["test"], max_length=255)
     content: Optional[str] = None
-    image1: Optional[HttpUrl] = None
-    image2: Optional[HttpUrl] = None
+    files: Optional[list[HttpUrl]] = None
 
-    @field_validator("image1", "image2", mode="before")
-    def empty_string_to_none(value: str) -> Optional[str]:
-        if value == "":  # 빈 문자열인 경우 None으로 변환
-            return None
+    @field_validator("files", mode="before")
+    def remove_empty_strings_from_files(
+        value: Optional[List[str]],
+    ) -> Optional[List[str]]:
+        if value:
+            return [file for file in value if (file != "" or file is not None)]
         return value
 
 

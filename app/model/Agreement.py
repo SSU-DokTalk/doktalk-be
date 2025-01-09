@@ -23,3 +23,6 @@ class Agreement(Base, Timestamp):
     term: Union[int, Column] = Column(BIT(3), nullable=False)
 
     # Refs
+
+
+__all__ = ["Agreement"]

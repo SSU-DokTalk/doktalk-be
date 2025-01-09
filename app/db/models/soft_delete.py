@@ -30,3 +30,9 @@ class SoftDeleteMixin:
     def restore(self):
         self.is_deleted = False
         self.deleted_at = None
+
+
+__all__ = [
+    "BaseSession",
+    "SoftDeleteMixin",
+]

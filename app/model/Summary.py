@@ -5,12 +5,14 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, MEDIUMTEXT
 from sqlalchemy_utils import Timestamp
 
-from app.db.session import Base, CommentLikeBase
+from app.db.session import Base
+from app.db.models.postlike import PostlikeEntityBase
+from app.db.models.files import FilesEntityBase
 from app.model.SummaryComment import SummaryComment
 from app.model.SummaryLike import SummaryLike
 
 
-class Summary(Base, Timestamp, CommentLikeBase):
+class Summary(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
     __tablename__ = "summary"
 
     def __init__(self, **kwargs):
@@ -24,8 +26,8 @@ class Summary(Base, Timestamp, CommentLikeBase):
             self.free_content = summary_data.free_content
             self.charged_content = summary_data.charged_content
             self.price = summary_data.price
-            self.image1 = summary_data.image1
-            self.image2 = summary_data.image2
+            if summary_data.files:
+                self.files = [str(file) for file in summary_data.files]
 
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
@@ -34,17 +36,19 @@ class Summary(Base, Timestamp, CommentLikeBase):
         ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
+    isbn: Union[int, Column] = Column(
+        BIGINT(unsigned=True),
+        ForeignKey("book.isbn", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Fields
-    isbn: Union[str, Column] = Column(VARCHAR(13), nullable=False)
     title: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     free_content: Union[str, Column] = Column(VARCHAR(1000))
     charged_content: Union[str, Column] = Column(MEDIUMTEXT)
     price: Union[int, Column] = Column(
         INTEGER, nullable=False, default=0, server_default="0"
     )
-    image1: Union[str, Column] = Column(VARCHAR(255))
-    image2: Union[str, Column] = Column(VARCHAR(255))
 
     # Refs
     summary_comments = relationship(
@@ -53,3 +57,6 @@ class Summary(Base, Timestamp, CommentLikeBase):
     summary_likes = relationship(
         "SummaryLike", backref="summary", cascade="all, delete-orphan"
     )
+
+
+__all__ = ["Summary"]

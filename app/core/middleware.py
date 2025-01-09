@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.security import get_token, get_token_payload
 from app.db.connection import get_db
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.model.User import User
 
 
@@ -26,7 +26,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 r"/oauth/(kakao|google|naver|facebook)",
                 r"/post/((recent)|(([0-9]+)(/(comments))?))",
                 r"/summary/(([0-9]+)(/(comments))?)",
-                r"/user/(([0-9]+)(/(posts))?|test)",
+                r"/user/(([0-9]+)(/(posts|summaries|mybooks))?)",
                 r"/book(s|/([0-9]+))",
             ]
         elif request.method == "POST":
@@ -48,21 +48,23 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
         authorization = request.headers.get("Authorization")
         if authorization == None:
-            return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+            return JSONResponse(status_code=401, content={"errorCode": "MD1000"})
 
         token = get_token(authorization)
         # Bearer 토큰이 아닌 경우
         if token == None:
-            return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+            return JSONResponse(status_code=401, content={"errorCode": "MD1001"})
 
         try:
             payload = get_token_payload(token)
         except ExpiredSignatureError as e:
-            return JSONResponse(status_code=401, content={"detail": "Token Expired"})
+            return JSONResponse(status_code=401, content={"errorCode": "MD1002"})
+        except Exception as e:
+            return JSONResponse(status_code=401, content={"errorCode": "MD1003"})
 
         # 토큰 내용물이 없는 경우
         if not payload:
-            return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+            return JSONResponse(status_code=401, content={"errorCode": "MD1004"})
 
         db: Session = next(get_db())
         try:
@@ -78,7 +80,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             )
             # 존재하지 않는 유저인 경우
             if user == None:
-                return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+                return JSONResponse(status_code=401, content={"errorCode": "MD1005"})
             request.state.user = user
             return await call_next(request)
         finally:

@@ -1,16 +1,19 @@
 from typing import Union
 
+from pydantic.networks import HttpUrl
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT
 from sqlalchemy_utils import Timestamp
 
-from app.db.session import Base, CommentLikeBase
+from app.db.session import Base
+from app.db.models.postlike import PostlikeEntityBase
+from app.db.models.files import FilesEntityBase
 from app.model.PostComment import PostComment
 from app.model.PostLike import PostLike
 
 
-class Post(Base, Timestamp, CommentLikeBase):
+class Post(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
     __tablename__ = "post"
 
     def __init__(self, **kwargs):
@@ -21,8 +24,8 @@ class Post(Base, Timestamp, CommentLikeBase):
             self.user_id = user.id
             self.title = post_data.title
             self.content = post_data.content
-            self.image1 = post_data.image1
-            self.image2 = post_data.image2
+            if post_data.files:
+                self.files = [str(file) for file in post_data.files]
 
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
@@ -35,11 +38,12 @@ class Post(Base, Timestamp, CommentLikeBase):
     # Fields
     title: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     content: Union[str, Column] = Column(TEXT)
-    image1: Union[str, Column] = Column(VARCHAR(255))
-    image2: Union[str, Column] = Column(VARCHAR(255))
 
     # Refs
     post_comments = relationship(
         "PostComment", backref="post", cascade="all, delete-orphan"
     )
     post_likes = relationship("PostLike", backref="post", cascade="all, delete-orphan")
+
+
+__all__ = ["Post"]

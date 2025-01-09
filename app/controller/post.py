@@ -8,7 +8,7 @@ from sqlalchemy.orm import contains_eager
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.post import CreatePostReq, BasicPostRes
 from app.dto.post_comment import CreatePostCommentReq, PostComment
 from app.model.Post import Post
@@ -37,13 +37,13 @@ def getRecentPostsController(db: Session = Depends(get_db)):
 def getPostLikeController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-    post_ids: Union[List[int], None] = Query(default=None),
+    ids: Union[List[int], None] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
     게시글 좋아요 조회
     """
-    return getPostLikeService(post_ids, request.state.user.id, db)
+    return getPostLikeService(ids, request.state.user.id, db)
 
 
 @router.get("/comments/like")

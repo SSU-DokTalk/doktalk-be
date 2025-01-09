@@ -26,3 +26,6 @@ class DebateCommentLike(Base):
     # Fields
 
     # Refs
+
+
+__all__ = ["DebateCommentLike"]

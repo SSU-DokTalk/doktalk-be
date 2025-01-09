@@ -7,8 +7,10 @@ class SummaryCommentSchema(BaseModel):
     id: int = Field()
     user_id: int = Field()
     summary_id: int = Field()
+    upper_comment_id: int = Field()
 
     content: str = Field()
+    comments_num: int = Field()
     likes_num: int = Field()
     created: datetime = Field()
     updated: datetime = Field()

@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from starlette.middleware.cors import CORSMiddleware
 
-from app.controller import debate, image, post, purchase, summary, user, book
+from app.controller import debate, post, purchase, summary, user, book
 from app.core.middleware import JWTMiddleware
 from app.oauth import oauthController
+from app.controller import file
 
 origins = ["*"]
 
@@ -45,9 +46,10 @@ def createApp() -> FastAPI:
     _app.add_middleware(JWTMiddleware)
     add_pagination(_app)
 
-    _app.include_router(debate.router, prefix="/debate", tags=["토론 debate"])
-    _app.include_router(image.router, prefix="/image", tags=["이미지 업로드 image"])
     _app.include_router(book.router, prefix="/book", tags=["도서 검색 book"])
+    _app.include_router(debate.router, prefix="/debate", tags=["토론 debate"])
+    _app.include_router(file.router, prefix="/file", tags=["이미지 업로드 image"])
+    _app.include_router(post.router, prefix="/library", tags=["서재 library"])
     _app.include_router(post.router, prefix="/post", tags=["게시글 post"])
     _app.include_router(purchase.router, prefix="/purchase", tags=["구매 purchase"])
     _app.include_router(summary.router, prefix="/summary", tags=["요약 summary"])

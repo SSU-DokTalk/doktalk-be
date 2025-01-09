@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.dto.purchase import CreatePurchaseReq
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.model.Purchase import Purchase
 from app.model.User import User
 from app.model.Debate import Debate

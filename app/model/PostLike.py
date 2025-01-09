@@ -26,3 +26,6 @@ class PostLike(Base):
     # Fields
 
     # Refs
+
+
+__all__ = ["PostLike"]

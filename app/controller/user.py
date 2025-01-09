@@ -15,18 +15,24 @@ from app.core.security import (
     TokenData,
     oauth2_scheme,
 )
-from app.core.security import get_token, get_token_payload, encrypt
+from app.core.security import (
+    get_token,
+    get_token_payload,
+    encrypt,
+    REFRESH_TOKEN_EXPIRATION,
+)
 from app.db.connection import get_db
-from app.db.soft_delete import BaseSession as Session
-from app.dto.user import BasicRegisterReq, BasicLoginReq, UpdateUserInfoReq
-from app.dto.post import BasicPostRes
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.following import BasicFollowingSchema, BasicFollowerSchema
-from app.model.Following import Following
-from app.model.Post import Post
-from app.model.User import User
-from app.schema.user import UserSchema, BasicUserSchema
+from app.dto.my_book import BasicMyBookRes
+from app.dto.post import BasicPostRes
+from app.dto.summary import BasicSummaryRes
+from app.dto.debate import BasicDebateRes
+from app.dto.user import BasicRegisterReq, BasicLoginReq, UpdateUserInfoReq
+from app.model import Post, Summary, User, Following, MyBook, Debate
+from app.schema.user import UserSchema
 from app.schema.purchase import PurchaseSchema
-from app.service.image import ImageFile
+from app.service.file import FileManager
 from app.service.user import *
 from app.service.purchase import getPurchasesService
 
@@ -80,6 +86,65 @@ def getUserPostsController(
     )
 
 
+@router.get("/{user_id}/summaries")
+def getUserSummariesController(
+    user_id: int, db: Session = Depends(get_db)
+) -> Page[BasicSummaryRes]:
+    return paginate(
+        db.query(Summary)
+        .join(Summary.user)
+        .join(Summary.book)
+        .options(contains_eager(Summary.user))
+        .options(contains_eager(Summary.book))
+        .filter(Summary.user_id == user_id)
+        .order_by(Summary.created.desc())
+    )
+
+
+@router.get("/{user_id}/mybooks")
+def getMyBooksController(
+    user_id: int, db: Session = Depends(get_db)
+) -> Page[BasicMyBookRes]:
+    return paginate(
+        db.query(MyBook)
+        .join(MyBook.user)
+        .join(MyBook.book)
+        .options(contains_eager(MyBook.user))
+        .options(contains_eager(MyBook.book))
+        .filter(MyBook.user_id == user_id)
+        .order_by(MyBook.created.desc())
+    )
+
+
+@router.get("/{user_id}/purchased-summaries")
+def getPurchasedSummariesController(
+    user_id: int, db: Session = Depends(get_db)
+) -> Page[BasicSummaryRes]:
+    pass
+
+
+@router.get("/{user_id}/debates")
+def getUserDebatesController(
+    user_id: int, db: Session = Depends(get_db)
+) -> Page[BasicDebateRes]:
+    return paginate(
+        db.query(Debate)
+        .join(Debate.user)
+        .join(Debate.book)
+        .options(contains_eager(Debate.user))
+        .options(contains_eager(Debate.book))
+        .filter(Debate.user_id == user_id)
+        .order_by(Debate.created.desc())
+    )
+
+
+@router.get("/{user_id}/purchased-debates")
+def getPurchasedDebatesController(
+    user_id: int, db: Session = Depends(get_db)
+) -> Page[BasicDebateRes]:
+    pass
+
+
 @router.get("/{user_id}/followers")
 def getFollowersController(
     user_id: int,
@@ -114,6 +179,19 @@ def getFollowersController(
         .options(contains_eager(Following.following))
         .order_by(Following.created.desc())
     )
+
+
+@router.get("/is-following/{target_user_id}")
+def isFollowingController(
+    target_user_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> bool:
+    """
+    팔로우 여부 확인
+    """
+    return isFollowingService(request.state.user.id, target_user_id, db)
 
 
 ############
@@ -164,6 +242,7 @@ def basicLoginController(
     response.set_cookie(
         key="Authorization",
         value=encrypt(refresh_token, base64.b64encode),
+        expires=int(REFRESH_TOKEN_EXPIRATION.total_seconds()),
     )
     return UserSchema.model_validate(user)
 
@@ -178,23 +257,25 @@ def refreshAccessToken(
     token = get_token(refresh_token, base64.b64decode)
     # Bearer 토큰이 아닌 경우
     if token == None:
-        return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+        return JSONResponse(status_code=401, content={"errorCode": "U1001"})
 
     try:
         payload = get_token_payload(token)
     except ExpiredSignatureError as e:
-        return JSONResponse(status_code=401, content={"detail": "Token Expired"})
+        return JSONResponse(status_code=401, content={"errorCode": "U1002"})
+    except Exception as e:
+        return JSONResponse(status_code=401, content={"errorCode": "U1003"})
 
     # 토큰 내용물이 없는 경우
     if not payload:
-        return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+        return JSONResponse(status_code=401, content={"errorCode": "U1004"})
 
     db: Session = next(get_db())
     try:
         user = db.query(User, with_deleted=True).filter(User.id == payload.sub).first()
         # 존재하지 않는 유저인 경우
         if user == None:
-            return JSONResponse(status_code=401, content={"detail": "Wrong Token"})
+            return JSONResponse(status_code=401, content={"errorCode": "U1005"})
 
         # access, refresh token
         access_token = create_access_token(TokenData(userId=user.id, name=user.name))
@@ -204,6 +285,7 @@ def refreshAccessToken(
         response.set_cookie(
             key="Authorization",
             value=encrypt(refresh_token, base64.b64encode),
+            expires=int(REFRESH_TOKEN_EXPIRATION.total_seconds()),
         )
     finally:
         db.close()
@@ -252,7 +334,7 @@ async def deleteUserProfileController(
     db: Session = Depends(get_db),
 ) -> None:
     user: User = request.state.user
-    await ImageFile.delete_from_s3(file_path=user.profile)
+    await FileManager.delete_from_s3(file_path=user.profile)
     user_in_db = db.query(User).filter(User.id == user.id).one_or_none()
     user_in_db.profile = None
     db.commit()
@@ -272,3 +354,16 @@ def deleteUserController(
         user.soft_delete()
         db.commit()
     return
+
+
+@router.delete("/follow/{target_user_id}")
+def unfollowUserController(
+    target_user_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    유저 언팔로우
+    """
+    return unfollowUserService(request.state.user.id, target_user_id, db)

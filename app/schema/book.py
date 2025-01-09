@@ -1,21 +1,19 @@
-from datetime import datetime
+from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class BookSchema(BaseModel):
+    isbn: int = Field()
     title: str = Field()
-    link: Optional[HttpUrl] = Field()
-    image: Optional[HttpUrl] = Field()
+    image: Optional[HttpUrl] = None
     author: str = Field()
-    discount: str = Field()
     publisher: str = Field()
-    pubdate: str = Field()
-    isbn: str = Field()
+    pubdate: Optional[date] = Field()
     description: str = Field()
 
-    @field_validator("link", "image", mode="before")
+    @field_validator("image", mode="before")
     def empty_string_to_none(value: str) -> Optional[str]:
         if value == "":  # 빈 문자열인 경우 None으로 변환
             return None
@@ -23,22 +21,3 @@ class BookSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class BookResponseSchema(BaseModel):
-    lastBuildDate: datetime = Field()
-    total: int = Field()
-    start: int = Field()
-    display: int = Field()
-    items: list[BookSchema] = Field()
-
-    @field_validator("lastBuildDate", mode="before")
-    def parse_last_build_date(cls, value: str) -> datetime:
-        date_format = "%a, %d %b %Y %H:%M:%S %z"
-        return datetime.strptime(value, date_format)
-
-    class Config:
-        from_attributes = True
-
-
-__all__ = ["BookSchema", "BookResponseSchema"]

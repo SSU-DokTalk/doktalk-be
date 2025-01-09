@@ -14,6 +14,8 @@ from app.core.config import settings
 
 cryptContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = APIKeyHeader(name="Authorization")
+ACCESS_TOKEN_EXPIRATION = timedelta(minutes=15)
+REFRESH_TOKEN_EXPIRATION = timedelta(days=14)
 
 
 def random_password() -> str:
@@ -60,11 +62,11 @@ def create_token(data: TokenData, expire_in: timedelta | None = None) -> str:
 
 
 def create_access_token(data: TokenData) -> str:
-    return create_token(data, timedelta(minutes=30))
+    return create_token(data, ACCESS_TOKEN_EXPIRATION)
 
 
 def create_refresh_token(data: TokenData) -> str:
-    return create_token(data, timedelta(days=14))
+    return create_token(data, REFRESH_TOKEN_EXPIRATION)
 
 
 def encrypt(token: str, func: Callable[[str], bytes] = base64.b85encode) -> str:
@@ -86,11 +88,10 @@ def validate_token(token: str) -> bool:
         payload: Payload = Payload(
             **jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
         )
-    except:
+    except ExpiredSignatureError as e:
+        raise ExpiredSignatureError(e)
+    except Exception as e:
         return False
-    now = datetime.now(timezone.utc)
-    if payload.exp < now:
-        raise ExpiredSignatureError
     return True
 
 
@@ -101,6 +102,8 @@ def get_token_payload(token: str) -> Payload:
 
 
 __all__ = [
+    "ACCESS_TOKEN_EXPIRATION",
+    "REFRESH_TOKEN_EXPIRATION",
     "cryptContext",
     "oauth2_scheme",
     "random_password",

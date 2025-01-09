@@ -133,3 +133,6 @@ def auth_facebook(code: str, redirect_uri: str):
         profile=info.get("picture").get("data").get("url"),
         provider=PROVIDER.FACEBOOK.name,
     )
+
+
+__all__ = ["auth_kakao", "auth_google", "auth_naver", "auth_facebook"]

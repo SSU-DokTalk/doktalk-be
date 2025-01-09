@@ -1,16 +1,20 @@
+from typing import List
+
 from fastapi import HTTPException
 from pymysql.err import IntegrityError as PymysqlIntegrityError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.debate import CreateDebateReq
-from app.dto.debate_comment import CreateDebateCommentReq
+from app.dto.debate_comment import CreateDebateCommentReq, BasicDebateComment
 from app.model.User import User
 from app.model.Debate import Debate
 from app.model.DebateLike import DebateLike
 from app.model.DebateComment import DebateComment
 from app.model.DebateCommentLike import DebateCommentLike
+from app.schema.debate_like import DebateLikeSchema
+from app.schema.debate_comment_like import DebateCommentLikeSchema
 
 
 def getDebateService(debate_id: int, db: Session):
@@ -24,6 +28,39 @@ def getDebateService(debate_id: int, db: Session):
     if res == None:
         raise HTTPException(status_code=404)
     return res
+
+
+def getDebateLikeService(
+    user_id: int, debate_ids: List[int], db: Session
+) -> List[DebateLikeSchema]:
+    return (
+        db.query(DebateLike)
+        .filter(DebateLike.user_id == user_id, DebateLike.debate_id.in_(debate_ids))
+        .all()
+    )
+
+
+def getDebateCommentLikeService(
+    user_id: int, debate_comment_ids: List[int], db: Session
+) -> List[DebateCommentLikeSchema]:
+    return (
+        db.query(DebateCommentLike)
+        .filter(
+            DebateCommentLike.user_id == user_id,
+            DebateCommentLike.debate_comment_id.in_(debate_comment_ids),
+        )
+        .all()
+    )
+
+
+def getDebateCommentsService(debate_id: int, db: Session) -> List[BasicDebateComment]:
+    return (
+        db.query(DebateComment)
+        .join(DebateComment.user)
+        .options(contains_eager(DebateComment.user))
+        .filter(DebateComment.debate_id == debate_id)
+        .all()
+    )
 
 
 def createDebateService(user: User, post_data: CreateDebateReq, db: Session) -> int:
@@ -118,10 +155,75 @@ def createDebateCommentLikeService(
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
+def deleteDebateLikeService(user: User, debate_id: int, db: Session) -> None:
+    try:
+        db.query(DebateLike).filter(
+            DebateLike.user_id == user.id, DebateLike.debate_id == debate_id
+        ).delete()
+        db.query(Debate).filter(Debate.id == debate_id).update(
+            {Debate.likes_num: Debate.likes_num - 1}
+        )
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=404)
+    return
+
+
+def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) -> None:
+    try:
+        db.query(DebateComment).filter(
+            DebateComment.id == debate_comment_id, DebateComment.user_id == user.id
+        ).delete()
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=404)
+    return
+
+
+def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) -> None:
+    debate_comment = (
+        db.query(DebateComment).filter(DebateComment.id == debate_comment_id).first()
+    )
+    if debate_comment == None:
+        raise HTTPException(status_code=404)
+
+    if debate_comment.user_id != user.id:
+        raise HTTPException(status_code=403)
+
+    db.delete(debate_comment)
+    db.commit()
+    return
+
+
+def deleteDebateCommentLikeService(
+    user: User, debate_comment_id: int, db: Session
+) -> None:
+    debate_comment_like = (
+        db.query(DebateCommentLike)
+        .filter(
+            DebateCommentLike.user_id == user.id,
+            DebateCommentLike.debate_comment_id == debate_comment_id,
+        )
+        .first()
+    )
+    if debate_comment_like == None:
+        raise HTTPException(status_code=404)
+
+    db.delete(debate_comment_like)
+    db.commit()
+    return
+
+
 __all__ = [
     "getDebateService",
+    "getDebateLikeService",
+    "getDebateCommentLikeService",
+    "getDebateCommentsService",
     "createDebateService",
     "createDebateLikeService",
     "createDebateCommentService",
     "createDebateCommentLikeService",
+    "deleteDebateLikeService",
+    "deleteDebateCommentService",
+    "deleteDebateCommentLikeService",
 ]

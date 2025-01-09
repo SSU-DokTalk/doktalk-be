@@ -32,3 +32,6 @@ def read_dummy_sentence(language: Literal["ko", "en"]) -> str:
         return ko.replace("\n", " ").replace(" ", "")
     elif language == "en":
         return en.replace("\n", " ").replace(" ", "")
+
+
+__all__ = ["generate_sentence"]

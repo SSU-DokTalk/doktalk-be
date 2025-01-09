@@ -5,25 +5,32 @@ from pymysql.err import IntegrityError as PymysqlIntegrityError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.summary import CreateSummaryReq
-from app.dto.summary_comment import CreateSummaryCommentReq, SummaryComment
-from app.model.Purchase import Purchase
-from app.model.Summary import Summary
-from app.model.SummaryLike import SummaryLike
-from app.model.SummaryComment import SummaryComment
-from app.model.SummaryCommentLike import SummaryCommentLike
-from app.model.User import User
+from app.dto.summary_comment import CreateSummaryCommentReq, BasicSummaryComment
+from app.schema.book_api import BookAPIResponseSchema
+from app.model import (
+    Book,
+    Purchase,
+    Summary,
+    SummaryLike,
+    SummaryComment,
+    SummaryCommentLike,
+    User,
+)
 from app.schema.summary_like import SummaryLikeSchema
 from app.schema.summary_comment import SummaryCommentSchema
 from app.schema.summary_comment_like import SummaryCommentLikeSchema
+from app.service.book_api import getAPIBookDetailService
 
 
 def getSummaryService(summary_id: int, db: Session):
     res = (
         db.query(Summary)
         .join(Summary.user)
+        .join(Summary.book)
         .options(contains_eager(Summary.user))
+        .options(contains_eager(Summary.book))
         .filter(Summary.id == summary_id)
         .first()
     )
@@ -52,15 +59,19 @@ def getSummaryChargedContentService(user_id: int, summary_id: int, db: Session) 
 
 def getSummaryLikeService(
     user_id: int, summary_ids: list[int], db: Session
-) -> List[SummaryLikeSchema]:
-    return (
-        db.query(SummaryLike)
+) -> List[list[bool]]:
+    if summary_ids is None or len(summary_ids) == 0:
+        return []
+    res = [
+        result[0]
+        for result in db.query(SummaryLike.summary_id)
         .filter(SummaryLike.user_id == user_id, SummaryLike.summary_id.in_(summary_ids))
         .all()
-    )
+    ]
+    return [(id in res) for id in summary_ids]
 
 
-def getSummaryCommentService(summary_id: int, db: Session) -> List[SummaryComment]:
+def getSummaryCommentService(summary_id: int, db: Session) -> List[BasicSummaryComment]:
     return (
         db.query(SummaryComment)
         .join(SummaryComment.user)
@@ -87,15 +98,25 @@ def createSummaryService(
     user: User, summary_data: CreateSummaryReq, db: Session
 ) -> int:
     try:
+        book = db.query(Book).filter(Book.isbn == summary_data.isbn).first()
+        if book == None:
+            bookData = BookAPIResponseSchema(
+                **getAPIBookDetailService(summary_data.isbn)
+            )
+            bookData = Book(data=bookData)
+            if bookData == None:
+                raise HTTPException(status_code=404, detail="Book not found")
+            db.add(bookData)
+            db.commit()
         summary = Summary(user=user, data=summary_data)
         db.add(summary)
         db.commit()
         db.refresh(summary)
+
     except IntegrityError as e:
         # 오류 메시지 분석
         if isinstance(e.orig, PymysqlIntegrityError):
             sql_code = e.orig.args[0]  # MySQL 상태 코드 (1452 또는 1062)
-
             if sql_code == 1452:  # 외래 키 제약 조건 위반
                 raise HTTPException(status_code=404, detail="Entity not found")
 
@@ -197,16 +218,22 @@ def createSummaryCommentLikeService(
 
 
 def deleteSummaryLikeService(user_id: int, summary_id: int, db: Session) -> None:
-    summary_like = (
-        db.query(SummaryLike)
-        .filter(SummaryLike.user_id == user_id, SummaryLike.summary_id == summary_id)
-        .first()
-    )
-    if summary_like == None:
+    try:
+        res = (
+            db.query(SummaryLike)
+            .filter(
+                SummaryLike.summary_id == summary_id, SummaryLike.user_id == user_id
+            )
+            .delete()
+        )
+        if res == 0:
+            raise HTTPException(status_code=404)
+        db.query(Summary).filter(Summary.id == summary_id).update(
+            {Summary.likes_num: Summary.likes_num - 1}
+        )
+        db.commit()
+    except IntegrityError:
         raise HTTPException(status_code=404)
-
-    db.delete(summary_like)
-    db.commit()
     return
 
 

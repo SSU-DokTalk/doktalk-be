@@ -16,3 +16,6 @@ class BasicFollowerSchema(FollowingSchema):
 
     class Config:
         from_attributes = True
+
+
+__all__ = ["BasicFollowingSchema", "BasicFollowerSchema"]

@@ -28,3 +28,6 @@ class OAuth(Base, Timestamp):
     provider: Union[PROVIDER, Column] = Column(ENUM(PROVIDER), nullable=False)
 
     # Refs
+
+
+__all__ = ["OAuth"]

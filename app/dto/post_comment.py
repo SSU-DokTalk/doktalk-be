@@ -5,6 +5,7 @@ from app.schema.user import BasicUserSchema
 
 
 class CreatePostCommentReq(BaseModel):
+    upper_comment_id: int = Field()
     content: str = Field()
 
 

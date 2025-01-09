@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 class MyBookSchema(BaseModel):
     id: int = Field()
     user_id: int = Field()
+    isbn: int = Field()
 
-    isbn: str = Field()
     created: datetime = Field()
     updated: datetime = Field()
 

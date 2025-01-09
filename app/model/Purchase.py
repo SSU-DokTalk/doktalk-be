@@ -1,9 +1,9 @@
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.dialects.mysql import INTEGER, VARCHAR
+from sqlalchemy.dialects.mysql import INTEGER, VARCHAR, ENUM, BIGINT
 from sqlalchemy_utils import Timestamp
 
 from app.db.session import Base
-from app.db.soft_delete import SoftDeleteMixin
+from app.db.models.soft_delete import SoftDeleteMixin
 
 
 class Purchase(Base, Timestamp, SoftDeleteMixin):
@@ -29,10 +29,10 @@ class Purchase(Base, Timestamp, SoftDeleteMixin):
     )
 
     # Fields
-    ## - 구분: (D: Debate, S: Summary) // 1자리
-    ## - 상품 id: BIGINT(unsigned=True) // 최대 20자리
-    ## product_id = 구분 + 상품 id // 최대 21자리
-    product_id = Column(VARCHAR(21), nullable=False, index=True)
+    ## - 구분: (D: Debate, S: Summary)
+    product_type = Column(ENUM("D", "S"), nullable=False)
+    ## - 상품 id: BIGINT(unsigned=True)
+    product_id = Column(BIGINT(unsigned=True), nullable=False)
     ## 구매 내역 설명
     content = Column(VARCHAR(255), nullable=False)
     ## 개당 구매 가격
@@ -43,3 +43,6 @@ class Purchase(Base, Timestamp, SoftDeleteMixin):
     ## is_deleted: BOOLEAN // 환불 여부
 
     # Relationships
+
+
+__all__ = ["Purchase"]

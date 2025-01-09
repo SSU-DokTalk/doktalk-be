@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy_utils import Timestamp
 
 from app.db.session import Base
-from app.db.soft_delete import SoftDeleteMixin
+from app.db.models.soft_delete import SoftDeleteMixin
 from app.model.OAuth import OAuth
 from app.model.Agreement import Agreement
 from app.model.Post import Post
@@ -90,8 +90,8 @@ class User(Base, Timestamp, SoftDeleteMixin):
     debate_comment_likes = relationship(
         "DebateCommentLike", backref="user", cascade="all, delete-orphan"
     )
-    my_books = relationship("MyBook", backref="user")
-    purchases = relationship("Purchase", backref="user")
+    my_books = relationship("MyBook", backref="user", cascade="all, delete-orphan")
+    purchases = relationship("Purchase", backref="user", cascade="all, delete-orphan")
 
     # Following relationships (users this user is following)
     following = relationship(
@@ -108,3 +108,6 @@ class User(Base, Timestamp, SoftDeleteMixin):
         back_populates="following",
         cascade="all, delete-orphan",  # Cascade 설정
     )
+
+
+__all__ = ["User"]

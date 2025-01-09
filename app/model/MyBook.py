@@ -17,8 +17,15 @@ class MyBook(Base, Timestamp):
         ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
+    isbn: Union[int, Column] = Column(
+        BIGINT(unsigned=True),
+        ForeignKey("book.isbn", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Fields
-    isbn: Union[str, Column] = Column(VARCHAR(13), nullable=False)
 
     # Refs
+
+
+__all__ = ["MyBook"]

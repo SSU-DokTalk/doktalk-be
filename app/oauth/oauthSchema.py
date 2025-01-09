@@ -11,3 +11,6 @@ class oAuthLoginInfo(BaseModel):
     name: Optional[str] = Field(None, description="oauth 유저의 닉네임")
     profile: Optional[str] = Field(None, description="oauth 유저의 프로필 이미지 URL")
     provider: Union[str, PROVIDER] = Field(description="소셜 로그인 할 서비스")
+
+
+__all__ = ["oAuthLoginInfo"]

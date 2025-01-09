@@ -2,13 +2,18 @@ from typing import Annotated, Literal, List, Union
 
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import func, literal
+from sqlalchemy.orm import contains_eager
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.summary import *
 from app.dto.summary_comment import *
 from app.function.generate_dummy import generate_sentence
+from app.model import Summary, Book
 from app.service.summary import *
 
 router = APIRouter()
@@ -17,17 +22,63 @@ router = APIRouter()
 ###########
 ### GET ###
 ###########
+@router.get("", response_model=Page[BasicSummaryRes])
+def getSummaryListController(
+    search: str = "",
+    searchby: Literal["bkt", "smt"] = "bkt",
+    sort: Literal["latest", "popular"] = "latest",
+    lang: Literal["ko", "en"] = "ko",
+    db: Session = Depends(get_db),
+) -> List[BasicSummaryRes]:
+    """
+    요약 리스트 조회
+    """
+
+    conditions = list()
+    if searchby == "bkt":
+        conditions = [
+            func.instr(func.lower(Book.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+    elif searchby == "smt":
+        conditions = [
+            func.instr(func.lower(Summary.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+
+    order_by = []
+    if sort == "popular":
+        order_by.append(Summary.like_count.desc())
+    # elif sort == "latest":
+    order_by.append(Summary.created.desc())
+
+    print(conditions)
+    summaries = paginate(
+        db.query(Summary)
+        .join(Summary.book)
+        .filter(*conditions)
+        .options(contains_eager(Summary.book))
+        .order_by(*order_by)
+    )
+
+    # Charged content를 마스킹
+    for items in summaries.items:
+        items.charged_content = generate_sentence(items.charged_content[:200], lang)
+        print(items.charged_content)
+    return summaries
+
+
 @router.get("s/like")
 def getSummaryLikeController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-    summary_ids: Union[List[int], None] = Query(default=None),
+    ids: Union[List[int], None] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
     요약의 좋아요 조회
     """
-    return getSummaryLikeService(request.state.user.id, summary_ids, db)
+    return getSummaryLikeService(request.state.user.id, ids, db)
 
 
 @router.get("/comments/like")
@@ -51,7 +102,7 @@ def getSummaryController(
     단일 요약 조회
     """
     summary = getSummaryService(summary_id, db)
-    summary.charged_content = generate_sentence(summary.charged_content, lang)
+    summary.charged_content = generate_sentence(summary.charged_content[:200], lang)
     return BasicSummaryRes.model_validate(summary).model_dump()
 
 
@@ -153,8 +204,7 @@ def deleteSummaryLikeController(
     """
     요약의 좋아요 삭제
     """
-    deleteSummaryLikeService(request.state.user.id, summary_id, db)
-    return
+    return deleteSummaryLikeService(request.state.user.id, summary_id, db)
 
 
 @router.delete("/comment/{summary_comment_id}")
@@ -167,8 +217,7 @@ def deleteSummaryCommentController(
     """
     요약의 댓글 삭제
     """
-    deleteSummaryCommentService(request.state.user.id, summary_comment_id, db)
-    return
+    return deleteSummaryCommentService(request.state.user.id, summary_comment_id, db)
 
 
 @router.delete("/comment/{summary_comment_id}/like")
@@ -181,5 +230,6 @@ def deleteSummaryCommentLikeController(
     """
     요약의 댓글 좋아요 삭제
     """
-    deleteSummaryCommentLikeService(request.state.user.id, summary_comment_id, db)
-    return
+    return deleteSummaryCommentLikeService(
+        request.state.user.id, summary_comment_id, db
+    )

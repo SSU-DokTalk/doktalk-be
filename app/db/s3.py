@@ -9,4 +9,4 @@ s3_client = client(
     region_name=settings.AWS_REGION,
 )
 
-__all__ = [s3_client]
+__all__ = ["s3_client"]

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
-from app.db.soft_delete import BaseSession as Session
+from app.db.models.soft_delete import BaseSession as Session
 from app.dto.purchase import CreatePurchaseReq
 from app.schema.purchase import PurchaseSchema
 from app.service.purchase import *

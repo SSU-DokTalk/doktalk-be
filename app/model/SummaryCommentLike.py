@@ -26,3 +26,6 @@ class SummaryCommentLike(Base):
     # Fields
 
     # Refs
+
+
+__all__ = ["SummaryCommentLike"]

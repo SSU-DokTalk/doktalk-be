@@ -3,15 +3,17 @@ from typing import Union
 
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT, DATETIME
+from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT, DATETIME, JSON
 from sqlalchemy_utils import Timestamp
 
-from app.db.session import Base, CommentLikeBase
+from app.db.session import Base
+from app.db.models.files import FilesEntityBase
+from app.db.models.postlike import PostlikeEntityBase
 from app.model.DebateComment import DebateComment
 from app.model.DebateLike import DebateLike
 
 
-class Debate(Base, Timestamp, CommentLikeBase):
+class Debate(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
     __tablename__ = "debate"
 
     def __init__(self, **kwargs):
@@ -25,8 +27,8 @@ class Debate(Base, Timestamp, CommentLikeBase):
             self.held_at = debate_data.held_at
             self.title = debate_data.title
             self.content = debate_data.content
-            self.image1 = debate_data.image1
-            self.image2 = debate_data.image2
+            if debate_data.files:
+                self.files = [str(file) for file in debate_data.files]
 
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
@@ -35,10 +37,14 @@ class Debate(Base, Timestamp, CommentLikeBase):
         ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
+    ## 도서의 고유번호
+    isbn: Union[int, Column] = Column(
+        BIGINT(unsigned=True),
+        ForeignKey("book.isbn", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Fields
-    ## 도서의 고유번호
-    isbn: Union[str, Column] = Column(VARCHAR(13), nullable=False)
     ## 토론 장소
     location: Union[str, Column] = Column(VARCHAR(255))
     ## 토론 온라인 링크
@@ -47,8 +53,6 @@ class Debate(Base, Timestamp, CommentLikeBase):
     held_at: Union[datetime, Column] = Column(DATETIME)
     title: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     content: Union[str, Column] = Column(TEXT)
-    image1: Union[str, Column] = Column(VARCHAR(255))
-    image2: Union[str, Column] = Column(VARCHAR(255))
 
     # Refs
     debate_comments = relationship(
@@ -57,3 +61,6 @@ class Debate(Base, Timestamp, CommentLikeBase):
     debate_likes = relationship(
         "DebateLike", backref="debate", cascade="all, delete-orphan"
     )
+
+
+__all__ = ["Debate"]
