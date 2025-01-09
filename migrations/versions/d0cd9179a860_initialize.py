@@ -1,8 +1,8 @@
 """initialize
 
-Revision ID: 4fb49541d9f2
+Revision ID: d0cd9179a860
 Revises: 
-Create Date: 2025-01-07 02:56:59.551396
+Create Date: 2025-01-09 14:51:26.265026
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = '4fb49541d9f2'
+revision: str = 'd0cd9179a860'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -120,7 +120,8 @@ def upgrade() -> None:
     op.create_table('purchase',
     sa.Column('id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
-    sa.Column('product_id', mysql.VARCHAR(length=21), nullable=False),
+    sa.Column('product_type', mysql.ENUM('D', 'S'), nullable=False),
+    sa.Column('product_id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('content', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('price', mysql.INTEGER(), nullable=False),
     sa.Column('quantity', mysql.INTEGER(), nullable=False),
@@ -131,7 +132,6 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_purchase_product_id'), 'purchase', ['product_id'], unique=False)
     op.create_table('summary',
     sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
@@ -251,7 +251,6 @@ def downgrade() -> None:
     op.drop_table('debate_like')
     op.drop_table('debate_comment')
     op.drop_table('summary')
-    op.drop_index(op.f('ix_purchase_product_id'), table_name='purchase')
     op.drop_table('purchase')
     op.drop_table('post')
     op.drop_table('oauth')
