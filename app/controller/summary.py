@@ -68,6 +68,27 @@ def getSummaryListController(
     return summaries
 
 
+@router.get("/recent", response_model=Page[BasicSummaryRes])
+def getRecentSummaryListController(
+    lang: Literal["ko", "en"] = "ko",
+    db: Session = Depends(get_db),
+) -> List[BasicSummaryRes]:
+    """
+    최근 요약 리스트 조회
+    """
+    summaries = paginate(
+        db.query(Summary)
+        .join(Summary.book)
+        .options(contains_eager(Summary.book))
+        .order_by(Summary.created.desc())
+    )
+
+    # Charged content를 마스킹
+    for items in summaries.items:
+        items.charged_content = generate_sentence(items.charged_content[:200], lang)
+    return summaries
+
+
 @router.get("s/like")
 def getSummaryLikeController(
     request: Request,
