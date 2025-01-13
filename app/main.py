@@ -48,7 +48,7 @@ def createApp() -> FastAPI:
 
     _app.include_router(book.router, prefix="/book", tags=["도서 검색 book"])
     _app.include_router(debate.router, prefix="/debate", tags=["토론 debate"])
-    _app.include_router(file.router, prefix="/file", tags=["이미지 업로드 image"])
+    _app.include_router(file.router, prefix="/file", tags=["파일 업로드 file"])
     _app.include_router(post.router, prefix="/library", tags=["서재 library"])
     _app.include_router(post.router, prefix="/post", tags=["게시글 post"])
     _app.include_router(purchase.router, prefix="/purchase", tags=["구매 purchase"])

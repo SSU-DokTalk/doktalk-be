@@ -1,14 +1,21 @@
-from typing import Annotated, List
+from datetime import datetime, timezone, timedelta
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, Request, Query
+from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import func
+from sqlalchemy.orm import contains_eager
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.debate import *
 from app.dto.debate_comment import *
+from app.model import Debate, Book
 from app.service.debate import *
+from app.var import *
 
 router = APIRouter()
 
@@ -16,20 +23,87 @@ router = APIRouter()
 ###########
 ### GET ###
 ###########
-@router.get("s/like")
+@router.get("", response_model=Page[BasicDebateRes])
+def getDebateListController(
+    search: str = "",
+    searchby: SEARCHBY = DEFAULT_SEARCHBY,
+    sortby: EXT_SORTBY = DEFAULT_SORTBY,
+    from_: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    토론방 리스트 조회
+    """
+    conditions = list()
+    if searchby == "bt":
+        conditions = [
+            func.instr(func.lower(Book.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+    elif searchby == "it":
+        conditions = [
+            func.instr(func.lower(Debate.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+
+    order_by = []
+    if sortby == "popular":
+        from__ = datetime.now(timezone.utc) - timedelta(days=7)
+        order_by.append(Debate.likes_num.desc())
+        conditions.append(Debate.created >= from__)
+    elif sortby == "from":
+        try:
+            print(from_)
+            year, month, day = map(int, from_.split("."))
+            print(year, month, day)
+            conditions.append(
+                Debate.created >= datetime(year=year, month=month, day=day)
+            )
+        except Exception as e:
+            if e is AttributeError or e is ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid date format. Please use 'YYYY-MM-DD'",
+                )
+            raise HTTPException(status_code=400, detail="errorCode: D-0001")
+    if sortby == "from":
+        order_by.append(Debate.created.asc())
+    else:
+        order_by.append(Debate.created.desc())
+
+    return paginate(
+        db.query(Debate)
+        .join(Debate.book)
+        .filter(*conditions)
+        .order_by(*order_by)
+        .options(contains_eager(Debate.book))
+    )
+
+
+@router.get("/popular", response_model=List[BasicDebateRes])
+def getPopularDebateListController(
+    db: Session = Depends(get_db),
+) -> List[BasicDebateRes]:
+    """
+    인기 토론방 리스트 조회
+    """
+    return getPopularDebateListService(db)
+
+
+@router.get("s/like", response_model=List[bool])
 def getDebateLikeController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-    debate_ids: List[int] = Query(default=None),
+    ids: List[int] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
     토론의 좋아요 조회
     """
-    return getDebateLikeService(request.state.user.id, debate_ids, db)
+    return getDebateLikeService(request.state.user.id, ids, db)
 
 
-@router.get("/comments/like")
+@router.get("/comments/like", response_model=List[bool])
 def getDebateCommentLikeController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
@@ -42,10 +116,8 @@ def getDebateCommentLikeController(
     return getDebateCommentLikeService(request.state.user.id, debate_comment_ids, db)
 
 
-@router.get("/{debate_id}")
-def getDebateController(
-    debate_id: int, db: Session = Depends(get_db)
-) -> BasicDebateRes:
+@router.get("/{debate_id}", response_model=BasicDebateRes)
+def getDebateController(debate_id: int, db: Session = Depends(get_db)):
     """
     단일 토론 조회
     """

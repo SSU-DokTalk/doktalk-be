@@ -45,8 +45,8 @@ def getAPIBookDetailService(isbn: str) -> BookAPIResponseSchema:
         "total": data["total"],
         "items": data["items"],
         "page": data["start"],
-        "pages": data["total"] // data["display"]
-        + bool(data["total"] % data["display"]),
+        "pages": data["total"] // (data["display"] if data["display"] else 1)
+        + bool(data["total"] % (data["display"] if data["display"] else 1)),
     }
 
 

@@ -1,10 +1,11 @@
-from typing import Annotated, Literal, List, Union
+from datetime import datetime, timezone, timedelta
+from typing import Annotated, List, Union
 
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import func, literal
+from sqlalchemy import func
 from sqlalchemy.orm import contains_eager
 
 from app.core.security import oauth2_scheme
@@ -15,6 +16,8 @@ from app.dto.summary_comment import *
 from app.function.generate_dummy import generate_sentence
 from app.model import Summary, Book
 from app.service.summary import *
+from app.var import *
+from app.enums import LANGUAGE
 
 router = APIRouter()
 
@@ -25,67 +28,75 @@ router = APIRouter()
 @router.get("", response_model=Page[BasicSummaryRes])
 def getSummaryListController(
     search: str = "",
-    searchby: Literal["bkt", "smt"] = "bkt",
-    sort: Literal["latest", "popular"] = "latest",
-    lang: Literal["ko", "en"] = "ko",
+    searchby: SEARCHBY = DEFAULT_SEARCHBY,
+    sortby: SORTBY = DEFAULT_SORTBY,
+    lang: LANGUAGE = LANGUAGE(DEFAULT_LANGUAGE),
     db: Session = Depends(get_db),
-) -> List[BasicSummaryRes]:
+):
     """
     요약 리스트 조회
     """
 
     conditions = list()
-    if searchby == "bkt":
+    if searchby == "bt":
         conditions = [
             func.instr(func.lower(Book.title), keyword) > 0
             for keyword in search.lower().split()
         ]
-    elif searchby == "smt":
+    elif searchby == "it":
         conditions = [
             func.instr(func.lower(Summary.title), keyword) > 0
             for keyword in search.lower().split()
         ]
 
     order_by = []
-    if sort == "popular":
-        order_by.append(Summary.like_count.desc())
-    # elif sort == "latest":
+    if sortby == "popular":
+        from_ = datetime.now(timezone.utc) - timedelta(days=7)
+        order_by.append(Summary.likes_num.desc())
+        conditions.append(Summary.created >= from_)
     order_by.append(Summary.created.desc())
 
-    print(conditions)
     summaries = paginate(
         db.query(Summary)
         .join(Summary.book)
         .filter(*conditions)
-        .options(contains_eager(Summary.book))
         .order_by(*order_by)
+        .options(contains_eager(Summary.book))
     )
 
     # Charged content를 마스킹
     for items in summaries.items:
         items.charged_content = generate_sentence(items.charged_content[:200], lang)
-        print(items.charged_content)
     return summaries
 
 
-@router.get("/recent", response_model=Page[BasicSummaryRes])
-def getRecentSummaryListController(
-    lang: Literal["ko", "en"] = "ko",
+@router.get("/popular")
+def getPopularSummaryListController(
+    lang: LANGUAGE = DEFAULT_LANGUAGE,
     db: Session = Depends(get_db),
 ) -> List[BasicSummaryRes]:
     """
-    최근 요약 리스트 조회
+    인기 요약 리스트 조회
     """
-    summaries = paginate(
+    from_ = datetime.now(timezone.utc) - timedelta(days=7)
+    summaries = (
         db.query(Summary)
+        .filter(Summary.created >= from_)
         .join(Summary.book)
+        .join(Summary.user)
         .options(contains_eager(Summary.book))
-        .order_by(Summary.created.desc())
-    )
+        .options(contains_eager(Summary.user))
+        .order_by(
+            Summary.likes_num.desc(),
+            Summary.comments_num.desc(),
+            Summary.created.desc(),
+        )
+        .limit(5)
+    ).all()
 
     # Charged content를 마스킹
-    for items in summaries.items:
-        items.charged_content = generate_sentence(items.charged_content[:200], lang)
+    for summary in summaries:
+        summary.charged_content = generate_sentence(summary.charged_content[:200], lang)
     return summaries
 
 
@@ -117,7 +128,7 @@ def getSummaryCommentLikeController(
 
 @router.get("/{summary_id}")
 def getSummaryController(
-    summary_id: int, lang: Literal["ko", "en"] = "ko", db: Session = Depends(get_db)
+    summary_id: int, lang: LANGUAGE = DEFAULT_LANGUAGE, db: Session = Depends(get_db)
 ) -> BasicSummaryRes:
     """
     단일 요약 조회

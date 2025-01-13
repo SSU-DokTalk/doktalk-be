@@ -22,10 +22,10 @@ class JWTMiddleware(BaseHTTPMiddleware):
         if request.method == "GET":
             token_not_needed = [
                 r"/(favicon.ico|docs|openapi.json)",
-                r"/debate/(([0-9]+)(/(comments))?)",
+                r"/debate(/(popular)|(([0-9]+)(/(comments))?))?",
                 r"/oauth/(kakao|google|naver|facebook)",
                 r"/post/((recent)|(([0-9]+)(/(comments))?))",
-                r"/summary(/((recent)|([0-9]+)(/(comments))?))?",
+                r"/summary(/((popular)|([0-9]+)(/(comments))?))?",
                 r"/user/(([0-9]+)(/(posts|summaries|mybooks))?)",
                 r"/book(s|/([0-9]+))",
             ]

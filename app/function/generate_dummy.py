@@ -1,8 +1,11 @@
-from typing import Literal
 from app.function.dummy_data import ko, en
+from app.enums import LANGUAGE
+from app.var import DEFAULT_LANGUAGE
 
 
-def generate_sentence(original: str, language: Literal["ko", "en"] = "ko") -> str:
+def generate_sentence(
+    original: str, language: LANGUAGE = LANGUAGE(DEFAULT_LANGUAGE)
+) -> str:
     """
     original 문장을 이용해 dummy 문장 생성
     """
@@ -22,16 +25,13 @@ def generate_sentence(original: str, language: Literal["ko", "en"] = "ko") -> st
     return "\n".join(results)
 
 
-def read_dummy_sentence(language: Literal["ko", "en"]) -> str:
+def read_dummy_sentence(language: LANGUAGE) -> str:
     """
     더미 문장을 반환
     """
-    if not language in ["ko", "en"]:
-        raise ValueError("지원하지 않는 언어입니다.")
-    if language == "ko":
-        return ko.replace("\n", " ").replace(" ", "")
-    elif language == "en":
+    if language.value in ["us"]:
         return en.replace("\n", " ").replace(" ", "")
+    return ko.replace("\n", " ").replace(" ", "")
 
 
 __all__ = ["generate_sentence"]

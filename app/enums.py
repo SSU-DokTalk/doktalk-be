@@ -25,4 +25,16 @@ class ROLE(Enum):
                 return enum
 
 
-__all__ = ["PROVIDER", "ROLE"]
+class LANGUAGE(Enum):
+    KR = "kr"
+    US = "us"
+
+    @classmethod
+    def from_str(cls, name: str):
+        for enum in cls:
+            if enum.value == name:
+                return enum
+        return cls.KR
+
+
+__all__ = ["PROVIDER", "ROLE", "LANGUAGE"]

@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime, timezone, timedelta
 
 from fastapi import HTTPException
 from pymysql.err import IntegrityError as PymysqlIntegrityError
@@ -8,13 +9,11 @@ from sqlalchemy.orm import contains_eager
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.debate import CreateDebateReq
 from app.dto.debate_comment import CreateDebateCommentReq, BasicDebateComment
-from app.model.User import User
-from app.model.Debate import Debate
-from app.model.DebateLike import DebateLike
-from app.model.DebateComment import DebateComment
-from app.model.DebateCommentLike import DebateCommentLike
+from app.model import Book, User, Debate, DebateLike, DebateComment, DebateCommentLike
 from app.schema.debate_like import DebateLikeSchema
 from app.schema.debate_comment_like import DebateCommentLikeSchema
+from app.schema.book_api import BookAPIResponseSchema
+from app.service.book_api import getAPIBookDetailService
 
 
 def getDebateService(debate_id: int, db: Session):
@@ -30,14 +29,36 @@ def getDebateService(debate_id: int, db: Session):
     return res
 
 
+def getPopularDebateListService(db: Session) -> List[Debate]:
+    from_ = datetime.now(timezone.utc) - timedelta(days=7)
+    return (
+        db.query(Debate)
+        .filter(Debate.created >= from_)
+        .join(Debate.user)
+        .join(Debate.book)
+        .options(contains_eager(Debate.user))
+        .options(contains_eager(Debate.book))
+        .order_by(
+            Debate.likes_num.desc(), Debate.comments_num.desc(), Debate.created.desc()
+        )
+        .limit(5)
+        .all()
+    )
+
+
 def getDebateLikeService(
     user_id: int, debate_ids: List[int], db: Session
 ) -> List[DebateLikeSchema]:
-    return (
-        db.query(DebateLike)
+    if debate_ids is None or len(debate_ids) == 0:
+        return []
+    res = [
+        result[0]
+        for result in db.query(DebateLike.debate_id)
         .filter(DebateLike.user_id == user_id, DebateLike.debate_id.in_(debate_ids))
         .all()
-    )
+    ]
+
+    return [(id in res) for id in debate_ids]
 
 
 def getDebateCommentLikeService(
@@ -63,23 +84,33 @@ def getDebateCommentsService(debate_id: int, db: Session) -> List[BasicDebateCom
     )
 
 
-def createDebateService(user: User, post_data: CreateDebateReq, db: Session) -> int:
+def createDebateService(user: User, debate_data: CreateDebateReq, db: Session) -> int:
     try:
-        debate = Debate(user=user, data=post_data)
+
+        book = db.query(Book).filter(Book.isbn == debate_data.isbn).first()
+        if book == None:
+            bookData = BookAPIResponseSchema(
+                **getAPIBookDetailService(debate_data.isbn)
+            )
+            bookData = Book(data=bookData)
+            db.add(bookData)
+            db.commit()
+
+        debate = Debate(user=user, data=debate_data)
         db.add(debate)
         db.commit()
         db.refresh(debate)
-    except IntegrityError:
-        raise HTTPException(status_code=404)
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Wrong isbn")
     return debate.id
 
 
 def createDebateLikeService(user: User, debate_id: int, db: Session) -> None:
     try:
-        post_like = DebateLike(user_id=user.id, debate_id=debate_id)
-        db.add(post_like)
+        debate_like = DebateLike(user_id=user.id, debate_id=debate_id)
+        db.add(debate_like)
         db.commit()
-        db.refresh(post_like)
+        db.refresh(debate_like)
 
         db.query(Debate).filter(Debate.id == debate_id).update(
             {Debate.likes_num: Debate.likes_num + 1}
@@ -155,11 +186,15 @@ def createDebateCommentLikeService(
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
-def deleteDebateLikeService(user: User, debate_id: int, db: Session) -> None:
+def deleteDebateLikeService(user_id: int, debate_id: int, db: Session) -> None:
     try:
-        db.query(DebateLike).filter(
-            DebateLike.user_id == user.id, DebateLike.debate_id == debate_id
-        ).delete()
+        res = (
+            db.query(DebateLike)
+            .filter(DebateLike.debate_id == debate_id, DebateLike.user_id == user_id)
+            .delete()
+        )
+        if res == 0:
+            raise HTTPException(status_code=404)
         db.query(Debate).filter(Debate.id == debate_id).update(
             {Debate.likes_num: Debate.likes_num - 1}
         )
@@ -216,6 +251,7 @@ def deleteDebateCommentLikeService(
 
 __all__ = [
     "getDebateService",
+    "getPopularDebateListService",
     "getDebateLikeService",
     "getDebateCommentLikeService",
     "getDebateCommentsService",

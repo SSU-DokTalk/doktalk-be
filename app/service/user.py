@@ -104,8 +104,6 @@ def followUserService(user_id: int, target_user_id: int, db: Session) -> None:
 
 
 def unfollowUserService(user_id: int, target_user_id: int, db: Session) -> None:
-    # TODO: try-except 구문을 사용하여 IntegrityError 처리
-    # update문을 사용하여 follower_num, following_num 업데이트
     user = db.query(User).filter(User.id == user_id).one_or_none()
     target_user = db.query(User).filter(User.id == target_user_id).one_or_none()
     if target_user == None:
