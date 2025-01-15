@@ -34,7 +34,10 @@ class Book(Base):
     author: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     publisher: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     pubdate: Union[date, Column] = Column(DATE(), nullable=False)
-    description: Union[str, Column] = Column(VARCHAR(1000))
+    description: Union[str, Column] = Column(VARCHAR(2000))
+    in_library_num: Union[int, Column] = Column(
+        BIGINT(unsigned=True), default=0, nullable=False, server_default="0"
+    )
 
     # Refs
     my_books = relationship("MyBook", backref="book", cascade="all, delete-orphan")

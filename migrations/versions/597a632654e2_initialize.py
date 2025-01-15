@@ -1,8 +1,8 @@
 """initialize
 
-Revision ID: d0cd9179a860
+Revision ID: 597a632654e2
 Revises: 
-Create Date: 2025-01-09 14:51:26.265026
+Create Date: 2025-01-15 19:53:20.873048
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = 'd0cd9179a860'
+revision: str = '597a632654e2'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,7 +27,8 @@ def upgrade() -> None:
     sa.Column('author', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('publisher', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('pubdate', sa.DATE(), nullable=False),
-    sa.Column('description', mysql.VARCHAR(length=1000), nullable=True),
+    sa.Column('description', mysql.VARCHAR(length=2000), nullable=True),
+    sa.Column('in_library_num', mysql.BIGINT(unsigned=True), server_default='0', nullable=False),
     sa.PrimaryKeyConstraint('isbn')
     )
     op.create_table('user',
@@ -86,14 +87,13 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('follower_id', 'following_id')
     )
     op.create_table('my_book',
-    sa.Column('id', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('isbn', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('updated', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['isbn'], ['book.isbn'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('user_id', 'isbn')
     )
     op.create_table('oauth',
     sa.Column('id', mysql.VARCHAR(length=255), nullable=False),

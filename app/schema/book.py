@@ -11,7 +11,8 @@ class BookSchema(BaseModel):
     author: str = Field()
     publisher: str = Field()
     pubdate: Optional[date] = Field()
-    description: str = Field()
+    description: Optional[str] = None
+    in_library_num: int = Field(default=0)
 
     @field_validator("image", mode="before")
     def empty_string_to_none(value: str) -> Optional[str]:

@@ -11,16 +11,17 @@ class MyBook(Base, Timestamp):
     __tablename__ = "my_book"
 
     # Keys
-    id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
     user_id: Union[int, Column] = Column(
         INTEGER(unsigned=True),
         ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
+        primary_key=True,
     )
     isbn: Union[int, Column] = Column(
         BIGINT(unsigned=True),
         ForeignKey("book.isbn", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
+        primary_key=True,
     )
 
     # Fields

@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 
 class MyBookSchema(BaseModel):
-    id: int = Field()
     user_id: int = Field()
     isbn: int = Field()
 
