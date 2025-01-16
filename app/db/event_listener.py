@@ -1,9 +1,11 @@
 from sqlalchemy import func, event
 from pydantic import HttpUrl, ValidationError
 
+from app.enums import CATEGORY
 from app.model.User import User
 from app.db.models.postlike import PostlikeEntityBase
 from app.db.models.files import FilesEntityBase
+from app.db.models.category import CategoryEntityBase
 
 
 @event.listens_for(User, "before_update", propagate=True)
@@ -49,3 +51,13 @@ def update_updated_at_only_for_specific_changes_fileentitybase(
             HttpUrl.validate(file_url)
         except ValidationError:
             raise ValueError(f"Invalid URL: {file_url}")
+
+
+@event.listens_for(CategoryEntityBase, "before_insert", propagate=True)
+@event.listens_for(CategoryEntityBase, "before_update", propagate=True)
+def update_updated_at_only_for_specific_changes_categoryentitybase(
+    mapper, connection, target
+):
+    # category가 설정 가능한 범위 밖에 있을 경우 0으로 초기화
+    if target.category > CATEGORY.max() or target.category < 0:
+        target.category = 0

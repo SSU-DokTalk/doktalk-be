@@ -14,6 +14,7 @@ class SummarySchema(BaseModel):
     charged_content: Optional[str] = None
     price: int = Field()
     files: Optional[list[HttpUrl]] = None
+    category: int = Field()
     likes_num: int = Field()
     comments_num: int = Field()
     created: datetime = Field()

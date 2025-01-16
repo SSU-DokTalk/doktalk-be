@@ -13,6 +13,7 @@ from app.db.connection import get_db
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.debate import *
 from app.dto.debate_comment import *
+from app.enums import CATEGORY
 from app.model import Debate, Book
 from app.service.debate import *
 from app.var import *
@@ -25,6 +26,7 @@ router = APIRouter()
 ###########
 @router.get("", response_model=Page[BasicDebateRes])
 def getDebateListController(
+    category: int = 0,
     search: str = "",
     searchby: SEARCHBY = DEFAULT_SEARCHBY,
     sortby: EXT_SORTBY = DEFAULT_SORTBY,
@@ -45,6 +47,8 @@ def getDebateListController(
             func.instr(func.lower(Debate.title), keyword) > 0
             for keyword in search.lower().split()
         ]
+    if 0 < category <= CATEGORY.max():
+        conditions.append((Debate.category.bitwise_and(category)) == category)
 
     order_by = []
     if sortby == "popular":
@@ -53,9 +57,7 @@ def getDebateListController(
         conditions.append(Debate.created >= from__)
     elif sortby == "from":
         try:
-            print(from_)
             year, month, day = map(int, from_.split("."))
-            print(year, month, day)
             conditions.append(
                 Debate.created >= datetime(year=year, month=month, day=day)
             )

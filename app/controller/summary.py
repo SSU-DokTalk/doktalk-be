@@ -13,11 +13,11 @@ from app.db.connection import get_db
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.summary import *
 from app.dto.summary_comment import *
+from app.enums import LANGUAGE, CATEGORY
 from app.function.generate_dummy import generate_sentence
 from app.model import Summary, Book
 from app.service.summary import *
 from app.var import *
-from app.enums import LANGUAGE
 
 router = APIRouter()
 
@@ -27,6 +27,7 @@ router = APIRouter()
 ###########
 @router.get("", response_model=Page[BasicSummaryRes])
 def getSummaryListController(
+    category: int = 0,
     search: str = "",
     searchby: SEARCHBY = DEFAULT_SEARCHBY,
     sortby: SORTBY = DEFAULT_SORTBY,
@@ -48,6 +49,8 @@ def getSummaryListController(
             func.instr(func.lower(Summary.title), keyword) > 0
             for keyword in search.lower().split()
         ]
+    if 0 < category <= CATEGORY.max():
+        conditions.append((Summary.category.bitwise_and(category)) == category)
 
     order_by = []
     if sortby == "popular":

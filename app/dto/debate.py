@@ -15,6 +15,7 @@ class CreateDebateReq(BaseModel):
     title: str = Field(max_length=255)
     content: Optional[str] = None
     files: Optional[list[HttpUrl]] = None
+    category: int = Field()
 
     @field_validator("files", mode="before")
     def remove_empty_strings_from_files(

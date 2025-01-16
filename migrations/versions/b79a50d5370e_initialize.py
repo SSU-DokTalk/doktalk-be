@@ -1,8 +1,8 @@
 """initialize
 
-Revision ID: 597a632654e2
+Revision ID: b79a50d5370e
 Revises: 
-Create Date: 2025-01-15 19:53:20.873048
+Create Date: 2025-01-16 04:17:20.532019
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = '597a632654e2'
+revision: str = 'b79a50d5370e'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -73,6 +73,7 @@ def upgrade() -> None:
     sa.Column('comments_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.Column('files', mysql.JSON(none_as_null=True), nullable=True),
+    sa.Column('category', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.ForeignKeyConstraint(['isbn'], ['book.isbn'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -145,6 +146,7 @@ def upgrade() -> None:
     sa.Column('comments_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.Column('likes_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.Column('files', mysql.JSON(none_as_null=True), nullable=True),
+    sa.Column('category', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.ForeignKeyConstraint(['isbn'], ['book.isbn'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], onupdate='CASCADE', ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

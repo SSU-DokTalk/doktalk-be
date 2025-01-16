@@ -8,11 +8,12 @@ from sqlalchemy_utils import Timestamp
 from app.db.session import Base
 from app.db.models.postlike import PostlikeEntityBase
 from app.db.models.files import FilesEntityBase
+from app.db.models.category import CategoryEntityBase
 from app.model.SummaryComment import SummaryComment
 from app.model.SummaryLike import SummaryLike
 
 
-class Summary(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
+class Summary(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEntityBase):
     __tablename__ = "summary"
 
     def __init__(self, **kwargs):

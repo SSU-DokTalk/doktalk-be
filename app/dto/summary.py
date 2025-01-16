@@ -12,6 +12,7 @@ class CreateSummaryReq(BaseModel):
     title: str = Field()
     free_content: Optional[str] = None
     charged_content: Optional[str] = None
+    category: int = Field()
     price: int = Field()
     files: Optional[list[HttpUrl]] = None
 
