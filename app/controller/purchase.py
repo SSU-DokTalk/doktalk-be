@@ -43,7 +43,7 @@ def createPurchaseController(
     """
     구매 내역 생성
     """
-    return createPurchaseService(request.state.user, purchase_data, db)
+    return createPurchaseService(request.state.user.id, purchase_data, db)
 
 
 ###########
@@ -64,8 +64,8 @@ def deletePurchaseController(
     purchase_id: int,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
     db: Session = Depends(get_db),
-) -> int:
+) -> None:
     """
-    환불하기
+    결제 취소하기
     """
     return deletePurchaseService(request.state.user.id, purchase_id, db)

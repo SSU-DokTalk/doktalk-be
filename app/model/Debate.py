@@ -54,6 +54,9 @@ class Debate(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEntit
     held_at: Union[datetime, Column] = Column(DATETIME)
     title: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     content: Union[str, Column] = Column(TEXT)
+    price: Union[int, Column] = Column(
+        INTEGER(unsigned=True), nullable=False, default=0, server_default="0"
+    )
 
     # Refs
     debate_comments = relationship(

@@ -14,6 +14,7 @@ class CreateDebateReq(BaseModel):
     held_at: Optional[datetime] = None
     title: str = Field(max_length=255)
     content: Optional[str] = None
+    price: int = Field()
     files: Optional[list[HttpUrl]] = None
     category: int = Field()
 

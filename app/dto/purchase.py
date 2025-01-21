@@ -1,13 +1,12 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
 
 class CreatePurchaseReq(BaseModel):
-    user_id: int = Field()
     product_type: Literal["D", "S"] = Field()
     product_id: int = Field()
-    content: str = Field()
+    content: Optional[str] = None
     price: int = Field()
     quantity: int = Field()
 

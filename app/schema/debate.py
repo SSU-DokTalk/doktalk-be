@@ -14,6 +14,7 @@ class DebateSchema(BaseModel):
     title: str = Field()
     content: Optional[str] = None
     files: Optional[list[HttpUrl]] = None
+    price: int = Field()
     category: int = Field()
     likes_num: int = Field()
     comments_num: int = Field()

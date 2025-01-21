@@ -31,7 +31,8 @@ def getPurchaseService(
         db.query(Purchase)
         .filter(
             Purchase.user_id == user_id,
-            Purchase.product_id == product_type + str(product_id),
+            Purchase.product_id == product_id,
+            Purchase.product_type == product_type,
         )
         .first()
     )
@@ -41,9 +42,21 @@ def getPurchaseService(
 
 
 def createPurchaseService(
-    user: User, purchase_data: CreatePurchaseReq, db: Session
+    user_id: int, purchase_data: CreatePurchaseReq, db: Session
 ) -> int:
     try:
+        purchase_history = (
+            db.query(Purchase)
+            .filter(
+                Purchase.user_id == user_id,
+                Purchase.product_id == purchase_data.product_id,
+                Purchase.product_type == purchase_data.product_type,
+            )
+            .first()
+        )
+        if purchase_history != None:
+            raise HTTPException(status_code=409)
+
         if purchase_data.product_type == "D":
             debate = db.get(Debate, purchase_data.product_id)
             if debate == None:
@@ -54,13 +67,14 @@ def createPurchaseService(
                 raise HTTPException(status_code=404)
         else:
             raise HTTPException(status_code=400)
+        purchase = Purchase(user_id=user_id, data=purchase_data)
 
-        purchase = Purchase(user=user, data=purchase_data)
         db.add(purchase)
         db.commit()
         db.refresh(purchase)
         return purchase.id
     except IntegrityError as e:
+        print(e)
         raise HTTPException(status_code=400)
 
 
@@ -70,8 +84,9 @@ def deletePurchaseService(user_id: int, purchase_id: int, db: Session) -> None:
         raise HTTPException(status_code=404)
     if purchase.user_id != user_id:
         raise HTTPException(status_code=403)
-    db.delete(purchase)
+    purchase.soft_delete()
     db.commit()
+    return
 
 
 __all__ = [

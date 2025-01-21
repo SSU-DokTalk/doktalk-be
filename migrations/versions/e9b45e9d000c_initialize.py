@@ -1,8 +1,8 @@
 """initialize
 
-Revision ID: b79a50d5370e
+Revision ID: e9b45e9d000c
 Revises: 
-Create Date: 2025-01-16 04:17:20.532019
+Create Date: 2025-01-21 19:06:24.261089
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = 'b79a50d5370e'
+revision: str = 'e9b45e9d000c'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -68,6 +68,7 @@ def upgrade() -> None:
     sa.Column('held_at', mysql.DATETIME(), nullable=True),
     sa.Column('title', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('content', mysql.TEXT(), nullable=True),
+    sa.Column('price', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('updated', sa.DateTime(), nullable=False),
     sa.Column('comments_num', mysql.INTEGER(unsigned=True), server_default='0', nullable=False),
@@ -123,7 +124,7 @@ def upgrade() -> None:
     sa.Column('user_id', mysql.INTEGER(unsigned=True), nullable=False),
     sa.Column('product_type', mysql.ENUM('D', 'S'), nullable=False),
     sa.Column('product_id', mysql.BIGINT(unsigned=True), nullable=False),
-    sa.Column('content', mysql.VARCHAR(length=255), nullable=False),
+    sa.Column('content', mysql.VARCHAR(length=255), nullable=True),
     sa.Column('price', mysql.INTEGER(), nullable=False),
     sa.Column('quantity', mysql.INTEGER(), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=False),

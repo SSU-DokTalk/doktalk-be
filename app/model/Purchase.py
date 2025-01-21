@@ -12,10 +12,10 @@ class Purchase(Base, Timestamp, SoftDeleteMixin):
     def __init__(self, **kwargs):
         class_name = kwargs["data"].__class__.__name__
         if class_name == "CreatePurchaseReq":
-            user = kwargs["user"]
             purchase_data = kwargs["data"]
-            self.user_id = user.id
-            self.product_id = purchase_data.product_type + str(purchase_data.product_id)
+            self.user_id = kwargs["user_id"]
+            self.product_id = purchase_data.product_id
+            self.product_type = purchase_data.product_type
             self.content = purchase_data.content
             self.price = purchase_data.price
             self.quantity = purchase_data.quantity
@@ -34,7 +34,7 @@ class Purchase(Base, Timestamp, SoftDeleteMixin):
     ## - 상품 id: BIGINT(unsigned=True)
     product_id = Column(BIGINT(unsigned=True), nullable=False)
     ## 구매 내역 설명
-    content = Column(VARCHAR(255), nullable=False)
+    content = Column(VARCHAR(255))
     ## 개당 구매 가격
     price = Column(INTEGER, nullable=False)
     ## 구매 수량
