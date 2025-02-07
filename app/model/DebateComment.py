@@ -2,7 +2,7 @@ from typing import Union
 
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy_utils import Timestamp
 
 from app.db.session import Base

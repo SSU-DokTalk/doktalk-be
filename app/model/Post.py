@@ -1,6 +1,5 @@
 from typing import Union
 
-from pydantic.networks import HttpUrl
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT
@@ -9,8 +8,7 @@ from sqlalchemy_utils import Timestamp
 from app.db.session import Base
 from app.db.models.postlike import PostlikeEntityBase
 from app.db.models.files import FilesEntityBase
-from app.model.PostComment import PostComment
-from app.model.PostLike import PostLike
+from app.model import PostComment, PostLike
 
 
 class Post(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
@@ -25,7 +23,10 @@ class Post(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
             self.title = post_data.title
             self.content = post_data.content
             if post_data.files:
-                self.files = [str(file) for file in post_data.files]
+                self.files = [
+                    {"name": file.name, "url": str(file.url)}
+                    for file in post_data.files
+                ]
 
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)

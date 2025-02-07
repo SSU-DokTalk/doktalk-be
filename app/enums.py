@@ -46,6 +46,7 @@ class CATEGORY(IntEnum):
     ESSAY = 1 << 5
     TEENAGER = 1 << 6
     CHILD = 1 << 7
+    WEBTOON = 1 << 8
 
     @classmethod
     def from_num(cls, cat_num: int):

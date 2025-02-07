@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, field_validator
+from app.dto.file import FileDto
 
 
 class PostSchema(BaseModel):
@@ -10,7 +11,7 @@ class PostSchema(BaseModel):
 
     title: str = Field()
     content: Optional[str] = None
-    files: Optional[List[HttpUrl]] = None
+    files: Optional[List[FileDto]] = None
     likes_num: int = Field()
     comments_num: int = Field()
     created: datetime = Field()

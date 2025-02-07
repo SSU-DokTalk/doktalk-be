@@ -1,6 +1,6 @@
 from typing import Annotated, List, Union
 
-from fastapi import APIRouter, Depends, Request, Query, Form
+from fastapi import APIRouter, Depends, Request, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -10,7 +10,7 @@ from app.core.security import oauth2_scheme
 from app.db.connection import get_db
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.post import CreatePostReq, BasicPostRes
-from app.dto.post_comment import CreatePostCommentReq, PostComment
+from app.dto.post_comment import CreatePostCommentReq
 from app.model.Post import Post
 from app.service.post import *
 
@@ -50,13 +50,13 @@ def getPostLikeController(
 def getPostLikeController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
-    post_comment_ids: Union[List[int], None] = Query(default=None),
+    ids: Union[List[int], None] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     """
     게시글의 댓글 좋아요 조회
     """
-    return getPostCommentLikeService(post_comment_ids, request.state.user.id, db)
+    return getPostCommentLikeService(ids, request.state.user.id, db)
 
 
 @router.get("/{post_id}")
@@ -69,12 +69,12 @@ def getPostController(post_id: int, db: Session = Depends(get_db)) -> BasicPostR
 
 @router.get("/{post_id}/comments")
 def getPostCommentsController(
-    post_id: int, db: Session = Depends(get_db)
-) -> List[PostComment]:
+    post_id: int, size: int = 10, page: int = 1, db: Session = Depends(get_db)
+):
     """
     게시글의 댓글들 조회
     """
-    return getPostCommentsService(post_id, db)
+    return getPostCommentsService(size, page, post_id, db)
 
 
 ############

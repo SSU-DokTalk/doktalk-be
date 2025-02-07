@@ -1,6 +1,8 @@
 from typing import List
 
 from fastapi import HTTPException
+from fastapi_pagination import Params, Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from pymysql.err import IntegrityError as PymysqlIntegrityError
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -8,12 +10,8 @@ from sqlalchemy.orm import contains_eager
 
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.post import CreatePostReq
-from app.dto.post_comment import CreatePostCommentReq
-from app.model.User import User
-from app.model.Post import Post
-from app.model.PostLike import PostLike
-from app.model.PostComment import PostComment
-from app.model.PostCommentLike import PostCommentLike
+from app.dto.post_comment import CreatePostCommentReq, BasicPostComment
+from app.model import User, Post, PostLike, PostComment, PostCommentLike
 from app.schema.post_like import PostLikeSchema
 from app.schema.post_comment_like import PostCommentLikeSchema
 
@@ -31,9 +29,7 @@ def getPostService(post_id: int, db: Session):
     return res
 
 
-def getPostLikeService(
-    post_ids: list[int], user_id: int, db: Session
-) -> List[list[bool]]:
+def getPostLikeService(post_ids: list[int], user_id: int, db: Session) -> List[bool]:
     res = [
         result[0]
         for result in db.query(PostLike.post_id)
@@ -43,27 +39,40 @@ def getPostLikeService(
     return [(id in res) for id in post_ids]
 
 
-def getPostCommentsService(post_id: int, db: Session):
-    return (
+def getPostCommentsService(
+    size: int, page: int, post_id: int, db: Session
+) -> Page[BasicPostComment]:
+    res = paginate(
         db.query(PostComment)
         .join(PostComment.user)
         .options(contains_eager(PostComment.user))
         .filter(PostComment.post_id == post_id)
-        .all()
+        .order_by(PostComment.created.desc()),
+        Params(size=size, page=page),
     )
+    res = {
+        "items": [BasicPostComment.model_validate(item) for item in res.items],
+        "page": res.page,
+        "pages": res.pages,
+        "total": res.total,
+    }
+    return res
 
 
 def getPostCommentLikeService(
     post_comment_ids: list[int], user_id: int, db: Session
-) -> List[PostCommentLikeSchema]:
-    return (
-        db.query(PostCommentLike)
+) -> List[bool]:
+    res = [
+        result[0]
+        for result in db.query(PostCommentLike.post_comment_id)
         .filter(
             PostCommentLike.user_id == user_id,
             PostCommentLike.post_comment_id.in_(post_comment_ids),
         )
         .all()
-    )
+    ]
+    print(res)
+    return [(id in res) for id in post_comment_ids]
 
 
 def createPostService(user: User, post_data: CreatePostReq, db: Session) -> int:
@@ -221,10 +230,16 @@ def deletePostCommentService(user: User, post_comment_id: int, db: Session) -> N
 
 def deletePostCommentLikeService(user: User, post_comment_id: int, db: Session) -> None:
     try:
-        db.query(PostCommentLike).filter(
-            PostCommentLike.user_id == user.id,
-            PostCommentLike.post_comment_id == post_comment_id,
-        ).delete()
+        res = (
+            db.query(PostCommentLike)
+            .filter(
+                PostCommentLike.user_id == user.id,
+                PostCommentLike.post_comment_id == post_comment_id,
+            )
+            .delete()
+        )
+        if res == 0:
+            raise HTTPException(status_code=404)
         db.query(PostComment).filter(PostComment.id == post_comment_id).update(
             {PostComment.likes_num: PostComment.likes_num - 1}
         )

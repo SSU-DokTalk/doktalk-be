@@ -14,21 +14,23 @@ from sqlalchemy_utils import Timestamp
 
 from app.db.session import Base
 from app.db.models.soft_delete import SoftDeleteMixin
-from app.model.OAuth import OAuth
-from app.model.Agreement import Agreement
-from app.model.Post import Post
-from app.model.PostComment import PostComment
-from app.model.PostLike import PostLike
-from app.model.Summary import Summary
-from app.model.SummaryComment import SummaryComment
-from app.model.SummaryCommentLike import SummaryCommentLike
-from app.model.Debate import Debate
-from app.model.DebateComment import DebateComment
-from app.model.DebateLike import DebateLike
-from app.model.DebateCommentLike import DebateCommentLike
-from app.model.MyBook import MyBook
-from app.model.Purchase import Purchase
-from app.model.Following import Following
+from app.model import (
+    OAuth,
+    Agreement,
+    Post,
+    PostComment,
+    PostLike,
+    Summary,
+    SummaryComment,
+    SummaryCommentLike,
+    Debate,
+    DebateComment,
+    DebateLike,
+    DebateCommentLike,
+    MyBook,
+    Purchase,
+    Following,
+)
 from app.enums import ROLE
 
 

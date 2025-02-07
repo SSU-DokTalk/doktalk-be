@@ -1,6 +1,4 @@
-from typing import Optional, List
-
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel
 
 from app.schema.my_book import MyBookSchema
 from app.schema.user import BasicUserSchema

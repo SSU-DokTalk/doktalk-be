@@ -10,8 +10,7 @@ from app.db.session import Base
 from app.db.models.files import FilesEntityBase
 from app.db.models.postlike import PostlikeEntityBase
 from app.db.models.category import CategoryEntityBase
-from app.model.DebateComment import DebateComment
-from app.model.DebateLike import DebateLike
+from app.model import DebateComment, DebateLike
 
 
 class Debate(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEntityBase):

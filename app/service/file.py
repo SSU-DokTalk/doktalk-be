@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from urllib.parse import quote, unquote
 from fastapi import UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.db.s3 import s3_client
 from app.core.config import settings
@@ -66,10 +67,27 @@ class FileManager:
                 f"{directory}/{filename}",
                 ExtraArgs={"ContentType": self.data.content_type},
             )
-            return f"{prefix}{quote(f"{directory}/{filename}", safe="~()*!.'")}"
+            return {
+                "name": self.data.filename,
+                "url": f"{prefix}{quote(f"{directory}/{filename}", safe="~()*!.'")}",
+            }
         except Exception as e:
             print(e)
             return str(e)
+
+    @staticmethod
+    async def download_from_s3(file_path: str):
+        if (
+            not file_path
+            or len(file_path) < len(prefix)
+            or file_path[: len(prefix)] != prefix
+        ):
+            return False
+
+        file_path = unquote("/".join(file_path.split("/")[3:]))
+
+        result = s3_client.get_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=file_path)
+        return StreamingResponse(content=result["Body"].iter_chunks())
 
     @staticmethod
     async def delete_from_s3(file_path: str) -> bool:

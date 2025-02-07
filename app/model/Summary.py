@@ -9,8 +9,7 @@ from app.db.session import Base
 from app.db.models.postlike import PostlikeEntityBase
 from app.db.models.files import FilesEntityBase
 from app.db.models.category import CategoryEntityBase
-from app.model.SummaryComment import SummaryComment
-from app.model.SummaryLike import SummaryLike
+from app.model import SummaryComment, SummaryLike
 
 
 class Summary(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEntityBase):

@@ -4,7 +4,7 @@ from typing import Literal
 import json
 
 from fastapi import HTTPException
-from fastapi_pagination import Page, Params
+from fastapi_pagination import Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import Session
 from sqlalchemy import func
