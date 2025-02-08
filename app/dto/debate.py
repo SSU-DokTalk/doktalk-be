@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from app.schema.debate import DebateSchema
 from app.schema.user import BasicUserSchema
 from app.schema.book import BookSchema
+from app.dto.file import FileDto
 
 
 class CreateDebateReq(BaseModel):
@@ -15,16 +16,8 @@ class CreateDebateReq(BaseModel):
     title: str = Field(max_length=255)
     content: Optional[str] = None
     price: int = Field()
-    files: Optional[list[HttpUrl]] = None
+    files: Optional[list[FileDto]] = None
     category: int = Field()
-
-    @field_validator("files", mode="before")
-    def remove_empty_strings_from_files(
-        value: Optional[List[str]],
-    ) -> Optional[List[str]]:
-        if value:
-            return [file for file in value if (file != "" or file is not None)]
-        return value
 
 
 class BasicDebateRes(DebateSchema):
