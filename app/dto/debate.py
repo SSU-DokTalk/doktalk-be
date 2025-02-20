@@ -10,14 +10,16 @@ from app.dto.file import FileDto
 
 
 class CreateDebateReq(BaseModel):
-    isbn: int = Field()
-    location: Optional[str] = None
-    held_at: Optional[datetime] = None
     title: str = Field(max_length=255)
+    location: Optional[str] = None
+    link: Optional[HttpUrl] = None
+    held_at: Optional[datetime] = None
+    isbn: int = Field()
+    category: int = Field()
+    limit: int = Field()
+    files: Optional[list[FileDto]] = None
     content: Optional[str] = None
     price: int = Field()
-    files: Optional[list[FileDto]] = None
-    category: int = Field()
 
 
 class BasicDebateRes(DebateSchema):

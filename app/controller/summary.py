@@ -229,6 +229,19 @@ def createSummaryCommentLikeController(
 ##############
 ### DELETE ###
 ##############
+@router.delete("/{summary_id}")
+def deleteSummaryController(
+    summary_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    요약 삭제
+    """
+    return deleteSummaryService(request.state.user.id, summary_id, db)
+
+
 @router.delete("/{summary_id}/like")
 def deleteSummaryLikeController(
     summary_id: int,

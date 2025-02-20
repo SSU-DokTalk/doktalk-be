@@ -48,12 +48,14 @@ def getSummaryChargedContentService(user_id: int, summary_id: int, db: Session) 
     purchase = (
         db.query(Purchase)
         .filter(
-            Purchase.user_id == user_id, Purchase.product_id == "S" + str(summary_id)
+            Purchase.user_id == user_id,
+            Purchase.product_type == "S",
+            Purchase.product_id == summary_id,
         )
         .first()
     )
     if purchase == None:
-        raise HTTPException(status_code=403)
+        raise HTTPException(status_code=404)
     return res.charged_content
 
 
@@ -217,6 +219,21 @@ def createSummaryCommentLikeService(
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
+def deleteSummaryService(user_id: int, summary_id: int, db: Session) -> None:
+    try:
+        summary = db.query(Summary).filter(Summary.id == summary_id).first()
+        print(summary)
+        if summary == None:
+            raise HTTPException(status_code=404)
+        if summary.user_id != user_id:
+            raise HTTPException(status_code=403)
+        db.delete(summary)
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=404)
+    return
+
+
 def deleteSummaryLikeService(user_id: int, summary_id: int, db: Session) -> None:
     try:
         res = (
@@ -283,6 +300,7 @@ __all__ = [
     "createSummaryLikeService",
     "createSummaryCommentService",
     "createSummaryCommentLikeService",
+    "deleteSummaryService",
     "deleteSummaryLikeService",
     "deleteSummaryCommentService",
     "deleteSummaryCommentLikeService",

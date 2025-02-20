@@ -3,6 +3,8 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
+from app.dto.file import FileDto
+
 
 class SummarySchema(BaseModel):
     id: int = Field()
@@ -13,20 +15,12 @@ class SummarySchema(BaseModel):
     free_content: Optional[str] = None
     charged_content: Optional[str] = None
     price: int = Field()
-    files: Optional[list[HttpUrl]] = None
+    files: Optional[list[FileDto]] = None
     category: int = Field()
     likes_num: int = Field()
     comments_num: int = Field()
     created: datetime = Field()
     updated: datetime = Field()
-
-    @field_validator("files", mode="before")
-    def remove_empty_strings_from_files(
-        value: Optional[List[str]],
-    ) -> Optional[List[str]]:
-        if value:
-            return [file for file in value if (file != "" or file is not None)]
-        return value
 
     class Config:
         from_attributes = True

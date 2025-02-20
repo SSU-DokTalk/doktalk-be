@@ -22,13 +22,20 @@ class Debate(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEntit
             user = kwargs["user"]
             debate_data = kwargs["data"]
             self.user_id = user.id
-            self.isbn = debate_data.isbn
-            self.location = debate_data.location
-            self.held_at = debate_data.held_at
             self.title = debate_data.title
+            self.location = debate_data.location
+            self.link = debate_data.link
+            self.held_at = debate_data.held_at
+            self.isbn = debate_data.isbn
+            self.category = debate_data.category
+            self.limit = debate_data.limit
             self.content = debate_data.content
+            self.price = debate_data.price
             if debate_data.files:
-                self.files = [str(file) for file in debate_data.files]
+                self.files = [
+                    {"name": file.name, "url": str(file.url)}
+                    for file in debate_data.files
+                ]
 
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
@@ -54,6 +61,10 @@ class Debate(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEntit
     title: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     content: Union[str, Column] = Column(TEXT)
     price: Union[int, Column] = Column(
+        INTEGER(unsigned=True), nullable=False, default=0, server_default="0"
+    )
+    ## 인원 제한
+    limit: Union[int, Column] = Column(
         INTEGER(unsigned=True), nullable=False, default=0, server_default="0"
     )
 
