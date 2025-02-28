@@ -1,4 +1,5 @@
 from typing import Annotated
+from datetime import datetime, timezone
 import base64
 
 from fastapi import APIRouter, Depends, Response, Request, HTTPException
@@ -56,13 +57,17 @@ def getMyInfoController(
 @router.get("/purchase")
 def getPurchasesController(
     request: Request,
+    _from: datetime,
+    _to: datetime,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    size: int = 10,
+    page: int = 1,
     db: Session = Depends(get_db),
-) -> PurchaseSchema:
+):
     """
     본인의 구매 내역 조회
     """
-    return getPurchasesService(request.state.user.id, db)
+    return getPurchasesService(size, page, _from, _to, request.state.user.id, db)
 
 
 @router.get("/{user_id}")

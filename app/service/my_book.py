@@ -6,12 +6,12 @@ from app.service.book_api import getAPIBookDetailService
 from app.schema.book_api import BookAPIResponseSchema
 
 
-def isInLibraryService(user_id: int, ids: list[int], db: Session) -> list[bool]:
+def isInLibraryService(user_id: int, ids: list[int], db: Session) -> list[int]:
     if ids is None or len(ids) == 0:
         return []
     res = db.query(MyBook).filter(MyBook.user_id == user_id, MyBook.isbn.in_(ids)).all()
     isbns = [r.isbn for r in res]
-    return [isbn in isbns for isbn in ids]
+    return isbns
 
 
 def addMyBookService(user_id: int, isbn: int, db: Session) -> int:

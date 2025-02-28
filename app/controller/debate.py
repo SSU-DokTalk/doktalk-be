@@ -92,7 +92,7 @@ def getPopularDebateListController(
     return getPopularDebateListService(db)
 
 
-@router.get("s/like", response_model=List[bool])
+@router.get("s/like", response_model=List[int])
 def getDebateLikeController(
     request: Request,
     authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
@@ -204,6 +204,19 @@ def createDebateCommentLikeController(
 ##############
 ### DELETE ###
 ##############
+@router.delete("/{debate_id}")
+def deleteDebateController(
+    debate_id: int,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    토론 삭제
+    """
+    return deleteDebateService(request.state.user.id, debate_id, db)
+
+
 @router.delete("/{debate_id}/like")
 def deleteDebateLikeController(
     debate_id: int,

@@ -46,9 +46,7 @@ def getPopularDebateListService(db: Session) -> List[Debate]:
     )
 
 
-def getDebateLikeService(
-    user_id: int, debate_ids: List[int], db: Session
-) -> List[DebateLikeSchema]:
+def getDebateLikeService(user_id: int, debate_ids: List[int], db: Session) -> List[int]:
     if debate_ids is None or len(debate_ids) == 0:
         return []
     res = [
@@ -58,7 +56,7 @@ def getDebateLikeService(
         .all()
     ]
 
-    return [(id in res) for id in debate_ids]
+    return res
 
 
 def getDebateCommentLikeService(
@@ -186,6 +184,20 @@ def createDebateCommentLikeService(
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
+def deleteDebateService(user_id: int, debate_id: int, db: Session) -> None:
+    try:
+        debate = db.query(Debate).filter(Debate.id == debate_id).first()
+        if debate == None:
+            raise HTTPException(status_code=404)
+        if debate.user_id != user_id:
+            raise HTTPException(status_code=403)
+        db.delete(debate)
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=400)
+    return
+
+
 def deleteDebateLikeService(user_id: int, debate_id: int, db: Session) -> None:
     try:
         res = (
@@ -259,6 +271,7 @@ __all__ = [
     "createDebateLikeService",
     "createDebateCommentService",
     "createDebateCommentLikeService",
+    "deleteDebateService",
     "deleteDebateLikeService",
     "deleteDebateCommentService",
     "deleteDebateCommentLikeService",

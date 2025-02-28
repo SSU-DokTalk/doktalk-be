@@ -61,7 +61,7 @@ def getSummaryChargedContentService(user_id: int, summary_id: int, db: Session) 
 
 def getSummaryLikeService(
     user_id: int, summary_ids: list[int], db: Session
-) -> List[list[bool]]:
+) -> List[int]:
     if summary_ids is None or len(summary_ids) == 0:
         return []
     res = [
@@ -70,7 +70,7 @@ def getSummaryLikeService(
         .filter(SummaryLike.user_id == user_id, SummaryLike.summary_id.in_(summary_ids))
         .all()
     ]
-    return [(id in res) for id in summary_ids]
+    return res
 
 
 def getSummaryCommentService(summary_id: int, db: Session) -> List[BasicSummaryComment]:
@@ -230,7 +230,7 @@ def deleteSummaryService(user_id: int, summary_id: int, db: Session) -> None:
         db.delete(summary)
         db.commit()
     except IntegrityError:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=400)
     return
 
 

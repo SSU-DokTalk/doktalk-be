@@ -36,7 +36,7 @@ def getPostLikeService(post_ids: list[int], user_id: int, db: Session) -> List[b
         .filter(PostLike.user_id == user_id, PostLike.post_id.in_(post_ids))
         .all()
     ]
-    return [(id in res) for id in post_ids]
+    return res
 
 
 def getPostCommentsService(
@@ -71,8 +71,7 @@ def getPostCommentLikeService(
         )
         .all()
     ]
-    print(res)
-    return [(id in res) for id in post_comment_ids]
+    return res
 
 
 def createPostService(user: User, post_data: CreatePostReq, db: Session) -> int:

@@ -1,6 +1,9 @@
-from typing import List, Literal
+from typing import Literal
+from datetime import datetime
 
 from fastapi import HTTPException
+from fastapi_pagination import Params, Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.exc import IntegrityError
 
 from app.dto.purchase import CreatePurchaseReq
@@ -12,15 +15,20 @@ from app.model.Summary import Summary
 from app.schema.purchase import PurchaseSchema
 
 
-def getPurchasesService(user_id: int, db: Session) -> List[PurchaseSchema]:
-    res = (
+def getPurchasesService(
+    size: int, page: int, _from: datetime, _to: datetime, user_id: int, db: Session
+) -> Page[PurchaseSchema]:
+    res = paginate(
         db.query(Purchase, with_deleted=True)
         .filter(Purchase.user_id == user_id)
-        .order_by(Purchase.created.desc())
-        .all()
+        .filter(_from < Purchase.created, Purchase.created < _to)
+        .order_by(Purchase.created.desc()),
+        Params(size=size, page=page),
     )
     if res == None:
         raise HTTPException(status_code=404)
+    res.items = [PurchaseSchema.model_validate(purchase) for purchase in res.items]
+    print(res)
     return res
 
 

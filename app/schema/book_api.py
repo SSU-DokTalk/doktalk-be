@@ -11,7 +11,7 @@ class BookAPISchema(BaseModel):
     discount: Optional[int] = None
     publisher: str = Field()
     pubdate: str = Field()
-    isbn: str = Field()
+    isbn: int = Field()
     in_library_num: Optional[int] = None
     description: Optional[str] = None
 
