@@ -40,6 +40,8 @@ pip install -r $(FILENAME)
 
 ### Alembic
 
+디비를 처음 생성하거나 업데이트 사항이 있을경우
+
 ```bash
 alembic revision --autogenerate -m "message" # SQL 자동 생성 // DB 갱신은 별도로 진행
 ```
@@ -47,4 +49,10 @@ alembic revision --autogenerate -m "message" # SQL 자동 생성 // DB 갱신은
 ```bash
 alembic upgrade head   # 가장 최신 버전으로 DB를 갱신
 alembic downgrade base # 가장 예전 버전으로 DB를 갱신
+```
+
+### run
+
+```bash
+fastapi dev
 ```
