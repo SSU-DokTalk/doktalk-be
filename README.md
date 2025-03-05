@@ -51,7 +51,7 @@ alembic upgrade head   # 가장 최신 버전으로 DB를 갱신
 alembic downgrade base # 가장 예전 버전으로 DB를 갱신
 ```
 
-### run
+### Run
 
 ```bash
 fastapi dev
