@@ -8,9 +8,9 @@ class BookSchema(BaseModel):
     isbn: int = Field()
     title: str = Field()
     image: Optional[HttpUrl] = None
-    author: str = Field()
-    publisher: str = Field()
-    pubdate: Optional[date] = Field()
+    author: Optional[str] = None
+    publisher: Optional[str] = None
+    pubdate: Optional[date] = None
     description: Optional[str] = None
     in_library_num: int = Field(default=0)
 

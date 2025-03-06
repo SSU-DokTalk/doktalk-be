@@ -1,8 +1,8 @@
-"""initialize
+"""initial
 
-Revision ID: af40a3e38f5b
+Revision ID: 6b6c67817d4f
 Revises: 
-Create Date: 2025-02-20 10:19:34.215841
+Create Date: 2025-03-06 12:14:05.768839
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = 'af40a3e38f5b'
+revision: str = '6b6c67817d4f'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,9 +24,9 @@ def upgrade() -> None:
     sa.Column('isbn', mysql.BIGINT(unsigned=True), nullable=False),
     sa.Column('title', mysql.VARCHAR(length=255), nullable=False),
     sa.Column('image', mysql.VARCHAR(length=255), nullable=True),
-    sa.Column('author', mysql.VARCHAR(length=255), nullable=False),
-    sa.Column('publisher', mysql.VARCHAR(length=255), nullable=False),
-    sa.Column('pubdate', sa.DATE(), nullable=False),
+    sa.Column('author', mysql.VARCHAR(length=255), nullable=True),
+    sa.Column('publisher', mysql.VARCHAR(length=255), nullable=True),
+    sa.Column('pubdate', sa.DATE(), nullable=True),
     sa.Column('description', mysql.VARCHAR(length=2000), nullable=True),
     sa.Column('in_library_num', mysql.BIGINT(unsigned=True), server_default='0', nullable=False),
     sa.PrimaryKeyConstraint('isbn')

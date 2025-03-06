@@ -31,9 +31,9 @@ class Book(Base):
     # Fields
     title: Union[str, Column] = Column(VARCHAR(255), nullable=False)
     image: Union[str, Column] = Column(VARCHAR(255))
-    author: Union[str, Column] = Column(VARCHAR(255), nullable=False)
-    publisher: Union[str, Column] = Column(VARCHAR(255), nullable=False)
-    pubdate: Union[date, Column] = Column(DATE(), nullable=False)
+    author: Union[str, Column] = Column(VARCHAR(255))
+    publisher: Union[str, Column] = Column(VARCHAR(255))
+    pubdate: Union[date, Column] = Column(DATE())
     description: Union[str, Column] = Column(VARCHAR(2000))
     in_library_num: Union[int, Column] = Column(
         BIGINT(unsigned=True), default=0, nullable=False, server_default="0"

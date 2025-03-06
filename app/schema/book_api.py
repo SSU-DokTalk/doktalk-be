@@ -7,10 +7,10 @@ class BookAPISchema(BaseModel):
     title: str = Field()
     link: Optional[HttpUrl] = None
     image: Optional[HttpUrl] = None
-    author: str = Field()
+    author: Optional[str] = None
     discount: Optional[int] = None
-    publisher: str = Field()
-    pubdate: str = Field()
+    publisher: Optional[str] = None
+    pubdate: Optional[str] = None
     isbn: int = Field()
     in_library_num: Optional[int] = None
     description: Optional[str] = None
