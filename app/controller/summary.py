@@ -69,7 +69,8 @@ def getSummaryListController(
 
     # Charged content를 마스킹
     for items in summaries.items:
-        items.charged_content = generate_sentence(items.charged_content[:200], lang)
+        items.charged_content = generate_sentence(
+            items.charged_content[:200], lang)
     return summaries
 
 
@@ -99,7 +100,8 @@ def getPopularSummaryListController(
 
     # Charged content를 마스킹
     for summary in summaries:
-        summary.charged_content = generate_sentence(summary.charged_content[:200], lang)
+        summary.charged_content = generate_sentence(
+            summary.charged_content[:200], lang)
     return summaries
 
 
@@ -137,7 +139,8 @@ def getSummaryController(
     단일 요약 조회
     """
     summary = getSummaryService(summary_id, db)
-    summary.charged_content = generate_sentence(summary.charged_content[:200], lang)
+    summary.charged_content = generate_sentence(
+        summary.charged_content[:200], lang)
     return BasicSummaryRes.model_validate(summary).model_dump()
 
 
@@ -220,6 +223,18 @@ def createSummaryCommentLikeController(
 ###########
 ### PUT ###
 ###########
+@router.put("/{summary_id}")
+def updateSummaryController(
+    summary_id: int,
+    summary_data: CreateSummaryReq,
+    request: Request,
+    authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    요약 수정
+    """
+    return updateSummaryService(request.state.user, summary_id, summary_data, db)
 
 #############
 ### PATCH ###

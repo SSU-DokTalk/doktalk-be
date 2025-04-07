@@ -9,6 +9,9 @@ from app.db.session import Base
 from app.db.models.postlike import PostlikeEntityBase
 from app.db.models.files import FilesEntityBase
 from app.db.models.category import CategoryEntityBase
+
+from app.dto.summary import CreateSummaryReq
+
 from app.model import SummaryComment, SummaryLike
 
 
@@ -32,6 +35,22 @@ class Summary(Base, Timestamp, PostlikeEntityBase, FilesEntityBase, CategoryEnti
                     {"name": file.name, "url": str(file.url)}
                     for file in summary_data.files
                 ]
+
+    def update(self, summary_data: CreateSummaryReq):
+        if isinstance(summary_data, CreateSummaryReq) is False:
+            return
+
+        self.isbn = summary_data.isbn
+        self.title = summary_data.title
+        self.free_content = summary_data.free_content
+        self.charged_content = summary_data.charged_content
+        self.price = summary_data.price
+        self.category = summary_data.category
+        if summary_data.files:
+            self.files = [
+                {"name": file.name, "url": str(file.url)}
+                for file in summary_data.files
+            ]
 
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
