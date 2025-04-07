@@ -13,6 +13,7 @@ from app.model import Book, User, Debate, DebateLike, DebateComment, DebateComme
 from app.schema.debate_like import DebateLikeSchema
 from app.schema.debate_comment_like import DebateCommentLikeSchema
 from app.schema.book_api import BookAPIResponseSchema
+from app.service.book import getOrCreateBook
 from app.service.book_api import getAPIBookDetailService
 
 
@@ -184,6 +185,39 @@ def createDebateCommentLikeService(
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
+def updateDebateService(user: User, debate_id: int, update_data: CreateDebateReq, db: Session) -> None:
+    try:
+        debate = (
+            db.query(Debate)
+            .join(Debate.user)
+            .options(contains_eager(Debate.user))
+            .filter(Debate.id == debate_id)
+            .first()
+        )
+
+        if debate is None:
+            raise HTTPException(status_code=404)
+
+        if debate.user_id != user.id:
+            raise HTTPException(status_code=403)
+
+        if debate.book.isbn != update_data.isbn:
+            book = getOrCreateBook(update_data.isbn, db)
+
+        print(vars(update_data))
+        debate.update(update_data)
+
+        db.commit()
+        db.refresh(debate)
+
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Wrong isbn")
+    except e:
+        raise e
+
+    return
+
+
 def deleteDebateService(user_id: int, debate_id: int, db: Session) -> None:
     try:
         debate = db.query(Debate).filter(Debate.id == debate_id).first()
@@ -229,7 +263,8 @@ def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) 
 
 def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) -> None:
     debate_comment = (
-        db.query(DebateComment).filter(DebateComment.id == debate_comment_id).first()
+        db.query(DebateComment).filter(
+            DebateComment.id == debate_comment_id).first()
     )
     if debate_comment == None:
         raise HTTPException(status_code=404)
@@ -271,6 +306,7 @@ __all__ = [
     "createDebateLikeService",
     "createDebateCommentService",
     "createDebateCommentLikeService",
+    "updateDebateService",
     "deleteDebateService",
     "deleteDebateLikeService",
     "deleteDebateCommentService",
