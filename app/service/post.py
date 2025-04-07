@@ -117,7 +117,8 @@ def createPostCommentService(
     user: User, post_id: int, post_comment_data: CreatePostCommentReq, db: Session
 ) -> int:
     try:
-        post_comment = PostComment(user=user, post_id=post_id, data=post_comment_data)
+        post_comment = PostComment(
+            user=user, post_id=post_id, data=post_comment_data)
         db.add(post_comment)
         db.commit()
         db.refresh(post_comment)
@@ -162,14 +163,34 @@ def createPostCommentLikeService(user: User, post_comment_id: int, db: Session) 
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
-def updatePostService(user: User, post_id: int, post_data: CreatePostReq, db: Session):
+def updatePostService(user: User, post_id: int, update_data: CreatePostReq, db: Session):
     try:
-        if user.id != db.query(Post).get(post_id).user_id:
+        post = db.query(Post).filter(Post.id == post_id).first()
+
+        if post is None:
+            raise HTTPException(status_code=404)
+
+        if post.user_id != user.id:
             raise HTTPException(status_code=403)
-        db.query(Post).filter(Post.id == post_id).update(post_data.model_dump())
+
+        post.update(update_data)
+
         db.commit()
-    except IntegrityError:
-        raise HTTPException(status_code=404)
+        db.refresh(post)
+
+    except IntegrityError as e:
+        # 오류 메시지 분석
+        if isinstance(e.orig, PymysqlIntegrityError):
+            sql_code = e.orig.args[0]  # MySQL 상태 코드 (1452 또는 1062)
+            if sql_code == 1452:  # 외래 키 제약 조건 위반
+                raise HTTPException(status_code=404, detail="Entity not found")
+
+        # 기타 IntegrityError 처리
+        raise HTTPException(status_code=400, detail="Database integrity error")
+    except Exception as e:
+        raise e
+
+    return
 
 
 def updatePostCommentService(
@@ -221,7 +242,8 @@ def deletePostCommentService(user: User, post_comment_id: int, db: Session) -> N
     try:
         if user.id != db.query(PostComment).get(post_comment_id).user_id:
             raise HTTPException(status_code=403)
-        db.query(PostComment).filter(PostComment.id == post_comment_id).delete()
+        db.query(PostComment).filter(
+            PostComment.id == post_comment_id).delete()
         db.commit()
     except IntegrityError:
         raise HTTPException(status_code=404)

@@ -1,5 +1,6 @@
 from typing import Union
 
+from app.dto.post import CreatePostReq
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, VARCHAR, TEXT
@@ -28,6 +29,18 @@ class Post(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
                     for file in post_data.files
                 ]
 
+    def update(self, post_data: CreatePostReq):
+        if isinstance(post_data, CreatePostReq) is False:
+            return
+
+        self.title = post_data.title
+        self.content = post_data.content
+        if post_data.files:
+            self.files = [
+                {"name": file.name, "url": str(file.url)}
+                for file in post_data.files
+            ]
+
     # Keys
     id: Union[int, Column] = Column(BIGINT(unsigned=True), primary_key=True)
     user_id: Union[int, Column] = Column(
@@ -44,7 +57,8 @@ class Post(Base, Timestamp, PostlikeEntityBase, FilesEntityBase):
     post_comments = relationship(
         "PostComment", backref="post", cascade="all, delete-orphan"
     )
-    post_likes = relationship("PostLike", backref="post", cascade="all, delete-orphan")
+    post_likes = relationship(
+        "PostLike", backref="post", cascade="all, delete-orphan")
 
 
 __all__ = ["Post"]

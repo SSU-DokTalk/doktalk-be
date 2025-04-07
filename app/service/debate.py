@@ -212,7 +212,7 @@ def updateDebateService(user: User, debate_id: int, update_data: CreateDebateReq
 
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail="Wrong isbn")
-    except e:
+    except Exception as e:
         raise e
 
     return

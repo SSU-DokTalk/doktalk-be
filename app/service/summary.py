@@ -239,7 +239,7 @@ def updateSummaryService(user: User, summary_id: int, update_data: CreateSummary
 
         # 기타 IntegrityError 처리
         raise HTTPException(status_code=400, detail="Database integrity error")
-    except e:
+    except Exception as e:
         raise e
 
     return
