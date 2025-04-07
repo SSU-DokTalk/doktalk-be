@@ -133,12 +133,7 @@ def createPostCommentLikeController(
 ###########
 ### PUT ###
 ###########
-
-
-#############
-### PATCH ###
-#############
-@router.patch("/{post_id}")
+@router.put("/{post_id}")
 def updatePostController(
     post_id: int,
     post_data: CreatePostReq,
@@ -151,6 +146,11 @@ def updatePostController(
     """
     return updatePostService(request.state.user, post_id, post_data, db)
 
+
+#############
+### PATCH ###
+#############
+# 근데 partial update 아닌 것 같은데 put ㄱㄱ
 
 @router.patch("/comment/{post_comment_id}")
 def updatePostCommentController(

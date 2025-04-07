@@ -21,6 +21,7 @@ from app.model import (
 from app.schema.summary_like import SummaryLikeSchema
 from app.schema.summary_comment import SummaryCommentSchema
 from app.schema.summary_comment_like import SummaryCommentLikeSchema
+from app.service.book import getOrCreateBook
 from app.service.book_api import getAPIBookDetailService
 
 
@@ -100,16 +101,8 @@ def createSummaryService(
     user: User, summary_data: CreateSummaryReq, db: Session
 ) -> int:
     try:
-        book = db.query(Book).filter(Book.isbn == summary_data.isbn).first()
-        if book == None:
-            bookData = BookAPIResponseSchema(
-                **getAPIBookDetailService(summary_data.isbn)
-            )
-            bookData = Book(data=bookData)
-            if bookData == None:
-                raise HTTPException(status_code=404, detail="Book not found")
-            db.add(bookData)
-            db.commit()
+        book = getOrCreateBook(summary_data.isbn, db)
+
         summary = Summary(user=user, data=summary_data)
         db.add(summary)
         db.commit()
@@ -219,6 +212,39 @@ def createSummaryCommentLikeService(
         raise HTTPException(status_code=400, detail="Database integrity error")
 
 
+def updateSummaryService(user: User, summary_id: int, update_data: CreateSummaryReq, db: Session) -> None:
+    try:
+        summary = db.query(Summary).filter(Summary.id == summary_id).first()
+
+        if summary is None:
+            raise HTTPException(status_code=404)
+
+        if summary.user_id != user.id:
+            raise HTTPException(status_code=403)
+
+        if summary.book.isbn != update_data.isbn:
+            book = getOrCreateBook(update_data.isbn, db)
+
+        summary.update(update_data)
+
+        db.commit()
+        db.refresh(summary)
+
+    except IntegrityError as e:
+        # 오류 메시지 분석
+        if isinstance(e.orig, PymysqlIntegrityError):
+            sql_code = e.orig.args[0]  # MySQL 상태 코드 (1452 또는 1062)
+            if sql_code == 1452:  # 외래 키 제약 조건 위반
+                raise HTTPException(status_code=404, detail="Entity not found")
+
+        # 기타 IntegrityError 처리
+        raise HTTPException(status_code=400, detail="Database integrity error")
+    except Exception as e:
+        raise e
+
+    return
+
+
 def deleteSummaryService(user_id: int, summary_id: int, db: Session) -> None:
     try:
         summary = db.query(Summary).filter(Summary.id == summary_id).first()
@@ -258,7 +284,8 @@ def deleteSummaryCommentService(
     user_id: int, summary_comment_id: int, db: Session
 ) -> None:
     summary_comment = (
-        db.query(SummaryComment).filter(SummaryComment.id == summary_comment_id).first()
+        db.query(SummaryComment).filter(
+            SummaryComment.id == summary_comment_id).first()
     )
     if summary_comment == None:
         raise HTTPException(status_code=404)
@@ -300,6 +327,7 @@ __all__ = [
     "createSummaryLikeService",
     "createSummaryCommentService",
     "createSummaryCommentLikeService",
+    "updateSummaryService",
     "deleteSummaryService",
     "deleteSummaryLikeService",
     "deleteSummaryCommentService",

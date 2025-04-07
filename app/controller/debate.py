@@ -195,6 +195,20 @@ def createDebateCommentLikeController(
 ###########
 ### PUT ###
 ###########
+@router.put("/{debate_id}")
+def updateDebateController(
+        debate_id: int,
+        debate_data: CreateDebateReq,
+        request: Request,
+        authorization: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+        db: Session = Depends(get_db)
+) -> None:
+    """
+    토론 수정
+    """
+    print('called')
+    return updateDebateService(request.state.user, debate_id, debate_data, db)
+
 
 #############
 ### PATCH ###
