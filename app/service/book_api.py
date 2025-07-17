@@ -100,7 +100,7 @@ def getNaverAPIBooksService(
 
 def getGoogleAPIBooksService(
     query: str,
-    db: Session,  # 현재 함수에서는 사용되지 않지만 시그니처 유지
+    db: Session,
     start: int = 1,  # Google Books API의 startIndex에 해당
     size: int = 10,  # Google Books API의 maxResults에 해당
     # Google Books API는 정렬 옵션이 제한적
@@ -152,58 +152,23 @@ def getGoogleAPIBooksService(
 
         if google_data.get("items"):
             for book_item in google_data["items"]:
-                volume_info: Dict[str, Any] = book_item.get("volumeInfo", {})
+                book_item = googleBookDataToBookAPIResponseSchema(book_item)
 
-                # ISBN-13 추출 (여러 식별자 중 ISBN_13 타입 우선)
-                isbn_13: Optional[int] = None
-                industry_identifiers: Optional[List[Dict[str, str]]] = volume_info.get(
-                    "industryIdentifiers")
-                if industry_identifiers:
-                    for identifier in industry_identifiers:
-                        if identifier.get("type") == "ISBN_13":
-                            isbn_13 = int(identifier.get("identifier"))
-                            break
-
-                if isbn_13 is None:
-                    continue  # ISBN_13이 없으면 건너뜀
-
-                # pubdate YYYYMMDD 형식으로 변환
-                pubdate_formatted: Optional[str] = None
-                published_date: Optional[str] = volume_info.get(
-                    "publishedDate")
-                if published_date:
-                    parts = published_date.split('-')
-                    if len(parts) == 3:  # YYYY-MM-DD
-                        pubdate_formatted = "".join(parts)
-                    elif len(parts) == 2:  # YYYY-MM
-                        pubdate_formatted = parts[0] + \
-                            parts[1] + "01"  # 일은 01로 가정
-                    elif len(parts) == 1:  # YYYY
-                        pubdate_formatted = parts[0] + "0101"  # 월/일은 01로 가정
+                if book_item['isbn'] is None:
+                    continue  # ISBN이 없으면 건너뜀
 
                 # in library num
-                in_library_num = 0
-                book = (
-                    db.query(Book)
-                    .filter(Book.isbn.in_([isbn_13]))
-                    .first()
-                )
-                if book:
-                    in_library_num = book.in_library_num
+                if db:
+                    book = (
+                        db.query(Book)
+                        .filter(Book.isbn.in_([book_item['isbn']]))
+                        .first()
+                    )
+                    if book:
+                        book_item['in_library_num'] = book.in_library_num
 
                 # 요청된 형식에 맞춰 데이터 매핑
-                items.append({
-                    "title": volume_info.get("title"),
-                    "link": None,  # Google Books API는 직접적인 쇼핑 링크를 제공하지 않음
-                    "image": volume_info.get("imageLinks", {}).get("thumbnail"),
-                    "author": ", ".join(volume_info.get("authors", [])) if volume_info.get("authors") else None,
-                    "discount": None,  # Google Books API는 가격 정보를 제공하지 않음
-                    "publisher": volume_info.get("publisher"),
-                    "pubdate": pubdate_formatted,
-                    "isbn": isbn_13,
-                    "in_library_num": in_library_num,
-                    "description": volume_info.get("description"),
-                })
+                items.append(book_item)
 
         # 총 페이지 수 계산
         # total_items가 0일 경우, pages도 0이 되도록 처리
@@ -243,13 +208,19 @@ def getAPIBookDetailService(isbn: str) -> BookAPIResponseSchema:
     if res.getcode() != 200:
         raise HTTPException(f"Naver Book API Error {res.getcode()}")
     data = json.loads(res.read().decode("utf-8"))
-    return {
-        "total": data["total"],
-        "items": data["items"],
-        "page": data["start"],
-        "pages": data["total"] // (data["display"] if data["display"] else 1)
-        + bool(data["total"] % (data["display"] if data["display"] else 1)),
-    }
+
+    if data["total"] > 0:
+        return {
+            "total": data["total"],
+            "items": data["items"],
+            "page": data["start"],
+            "pages": data["total"] // (data["display"] if data["display"] else 1)
+            + bool(data["total"] %
+                   (data["display"] if data["display"] else 1)),
+        }
+
+    # Naver에 없는경우 Google Books API로 검색
+    return getGoogleAPIBooksService(f"isbn:{isbn}", None)
 
 
 __all__ = [
@@ -257,3 +228,44 @@ __all__ = [
     "getGoogleAPIBooksService",
     "getAPIBookDetailService",
 ]
+
+
+def googleBookDataToBookAPIResponseSchema(data: dict) -> BookAPIResponseSchema:
+    volume_info: Dict[str, Any] = data.get("volumeInfo", {})
+
+    # ISBN-13 추출 (여러 식별자 중 ISBN_13 타입 우선)
+    isbn_13: Optional[int] = None
+    industry_identifiers: Optional[List[Dict[str, str]]] = volume_info.get(
+        "industryIdentifiers")
+    if industry_identifiers:
+        for identifier in industry_identifiers:
+            if identifier.get("type") == "ISBN_13":
+                isbn_13 = int(identifier.get("identifier"))
+                break
+
+    # pubdate YYYYMMDD 형식으로 변환
+    pubdate_formatted: Optional[str] = None
+    published_date: Optional[str] = volume_info.get(
+        "publishedDate")
+    if published_date:
+        parts = published_date.split('-')
+        if len(parts) == 3:  # YYYY-MM-DD
+            pubdate_formatted = "".join(parts)
+        elif len(parts) == 2:  # YYYY-MM
+            pubdate_formatted = parts[0] + \
+                parts[1] + "01"  # 일은 01로 가정
+        elif len(parts) == 1:  # YYYY
+            pubdate_formatted = parts[0] + "0101"  # 월/일은 01로 가정
+
+    return {
+        "title": volume_info.get("title"),
+        "link": None,  # Google Books API는 직접적인 쇼핑 링크를 제공하지 않음
+        "image": volume_info.get("imageLinks", {}).get("thumbnail"),
+        "author": ", ".join(volume_info.get("authors", [])) if volume_info.get("authors") else None,
+        "discount": None,  # Google Books API는 가격 정보를 제공하지 않음
+        "publisher": volume_info.get("publisher"),
+        "pubdate": pubdate_formatted,
+        "isbn": isbn_13,
+        "in_library_num": 0,
+        "description": volume_info.get("description"),
+    }
