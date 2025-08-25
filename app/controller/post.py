@@ -13,6 +13,7 @@ from app.dto.post import CreatePostReq, BasicPostRes
 from app.dto.post_comment import CreatePostCommentReq
 from app.model.Post import Post
 from app.service.post import *
+from app.var import *
 
 router = APIRouter()
 
@@ -20,6 +21,18 @@ router = APIRouter()
 ###########
 ### GET ###
 ###########
+@router.get("", response_model=Page[BasicPostRes])
+def getPostListController(
+    search: str = "",
+    sortby: SORTBY = DEFAULT_SORTBY,
+    db: Session = Depends(get_db),
+):
+    """
+    게시글 리스트 조회 (검색 기능 포함)
+    """
+    return getPostListService(search, sortby, db)
+
+
 @router.get("/recent", response_model=Page[BasicPostRes])
 def getRecentPostsController(db: Session = Depends(get_db)):
     """
@@ -64,7 +77,7 @@ def getPostController(post_id: int, db: Session = Depends(get_db)) -> BasicPostR
     """
     단일 게시글 조회
     """
-    return BasicPostRes.model_validate(getPostService(post_id, db))
+    return getPostService(post_id, db)
 
 
 @router.get("/{post_id}/comments")
