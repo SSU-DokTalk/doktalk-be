@@ -1,21 +1,15 @@
-from datetime import datetime, timezone, timedelta
 from typing import Annotated, List, Union
 
 from fastapi import APIRouter, Depends, Request, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import func
-from sqlalchemy.orm import contains_eager
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.summary import *
 from app.dto.summary_comment import *
-from app.enums import LANGUAGE, CATEGORY
-from app.function.generate_dummy import generate_sentence
-from app.model import Summary, Book
+from app.enums import LANGUAGE
 from app.service.summary import *
 from app.var import *
 
@@ -37,41 +31,7 @@ def getSummaryListController(
     """
     요약 리스트 조회
     """
-
-    conditions = list()
-    if searchby == "bt":
-        conditions = [
-            func.instr(func.lower(Book.title), keyword) > 0
-            for keyword in search.lower().split()
-        ]
-    elif searchby == "it":
-        conditions = [
-            func.instr(func.lower(Summary.title), keyword) > 0
-            for keyword in search.lower().split()
-        ]
-    if 0 < category <= CATEGORY.max():
-        conditions.append((Summary.category.bitwise_and(category)) == category)
-
-    order_by = []
-    if sortby == "popular":
-        from_ = datetime.now(timezone.utc) - timedelta(days=7)
-        order_by.append(Summary.likes_num.desc())
-        conditions.append(Summary.created >= from_)
-    order_by.append(Summary.created.desc())
-
-    summaries = paginate(
-        db.query(Summary)
-        .join(Summary.book)
-        .filter(*conditions)
-        .order_by(*order_by)
-        .options(contains_eager(Summary.book))
-    )
-
-    # Charged content를 마스킹
-    for items in summaries.items:
-        items.charged_content = generate_sentence(
-            items.charged_content[:200], lang)
-    return summaries
+    return getSummaryListService(category, search, searchby, sortby, lang, db)
 
 
 @router.get("/popular")
@@ -82,27 +42,7 @@ def getPopularSummaryListController(
     """
     인기 요약 리스트 조회
     """
-    from_ = datetime.now(timezone.utc) - timedelta(days=7)
-    summaries = (
-        db.query(Summary)
-        .filter(Summary.created >= from_)
-        .join(Summary.book)
-        .join(Summary.user)
-        .options(contains_eager(Summary.book))
-        .options(contains_eager(Summary.user))
-        .order_by(
-            Summary.likes_num.desc(),
-            Summary.comments_num.desc(),
-            Summary.created.desc(),
-        )
-        .limit(5)
-    ).all()
-
-    # Charged content를 마스킹
-    for summary in summaries:
-        summary.charged_content = generate_sentence(
-            summary.charged_content[:200], lang)
-    return summaries
+    return getPopularSummaryListService(lang, db)
 
 
 @router.get("s/like")
@@ -138,10 +78,7 @@ def getSummaryController(
     """
     단일 요약 조회
     """
-    summary = getSummaryService(summary_id, db)
-    summary.charged_content = generate_sentence(
-        summary.charged_content[:200], lang)
-    return BasicSummaryRes.model_validate(summary).model_dump()
+    return getSummaryWithMaskingService(summary_id, lang, db)
 
 
 @router.get("/{summary_id}/charged_content")
