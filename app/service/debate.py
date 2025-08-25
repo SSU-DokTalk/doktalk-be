@@ -2,19 +2,81 @@ from typing import List
 from datetime import datetime, timezone, timedelta
 
 from fastapi import HTTPException
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from pymysql.err import IntegrityError as PymysqlIntegrityError
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
 from app.db.models.soft_delete import BaseSession as Session
-from app.dto.debate import CreateDebateReq
+from app.dto.debate import CreateDebateReq, BasicDebateRes
 from app.dto.debate_comment import CreateDebateCommentReq, BasicDebateComment
+from app.enums import CATEGORY
 from app.model import Book, User, Debate, DebateLike, DebateComment, DebateCommentLike
 from app.schema.debate_like import DebateLikeSchema
 from app.schema.debate_comment_like import DebateCommentLikeSchema
 from app.schema.book_api import BookAPIResponseSchema
 from app.service.book import getOrCreateBook
 from app.service.book_api import getAPIBookDetailService
+
+
+def getDebateListService(
+    category: int,
+    search: str,
+    searchby: str,
+    sortby: str,
+    from_: str,
+    db: Session,
+) -> Page[BasicDebateRes]:
+    """
+    토론방 리스트 조회 서비스
+    """
+    conditions = list()
+    if searchby == "bt":
+        conditions = [
+            func.instr(func.lower(Book.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+    elif searchby == "it":
+        conditions = [
+            func.instr(func.lower(Debate.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+    if 0 < category <= CATEGORY.max():
+        conditions.append((Debate.category.bitwise_and(category)) == category)
+
+    order_by = []
+    if sortby == "popular":
+        from__ = datetime.now(timezone.utc) - timedelta(days=7)
+        order_by.append(Debate.likes_num.desc())
+        conditions.append(Debate.created >= from__)
+    elif sortby == "from":
+        try:
+            year, month, day = map(int, from_.split("."))
+            conditions.append(
+                Debate.created >= datetime(year=year, month=month, day=day)
+            )
+        except Exception as e:
+            if e is AttributeError or e is ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid date format. Please use 'YYYY-MM-DD'",
+                )
+            raise HTTPException(status_code=400, detail="errorCode: D-0001")
+
+    if sortby == "from":
+        order_by.append(Debate.created.asc())
+    else:
+        order_by.append(Debate.created.desc())
+
+    return paginate(
+        db.query(Debate)
+        .join(Debate.book)
+        .filter(*conditions)
+        .order_by(*order_by)
+        .options(contains_eager(Debate.book))
+    )
 
 
 def getDebateService(debate_id: int, db: Session):
@@ -250,18 +312,7 @@ def deleteDebateLikeService(user_id: int, debate_id: int, db: Session) -> None:
     return
 
 
-def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) -> None:
-    try:
-        db.query(DebateComment).filter(
-            DebateComment.id == debate_comment_id, DebateComment.user_id == user.id
-        ).delete()
-        db.commit()
-    except IntegrityError:
-        raise HTTPException(status_code=404)
-    return
-
-
-def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) -> None:
+def deleteDebateCommentService(user_id: int, debate_comment_id: int, db: Session) -> None:
     debate_comment = (
         db.query(DebateComment).filter(
             DebateComment.id == debate_comment_id).first()
@@ -269,7 +320,7 @@ def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) 
     if debate_comment == None:
         raise HTTPException(status_code=404)
 
-    if debate_comment.user_id != user.id:
+    if debate_comment.user_id != user_id:
         raise HTTPException(status_code=403)
 
     db.delete(debate_comment)
@@ -278,12 +329,12 @@ def deleteDebateCommentService(user: User, debate_comment_id: int, db: Session) 
 
 
 def deleteDebateCommentLikeService(
-    user: User, debate_comment_id: int, db: Session
+    user_id: int, debate_comment_id: int, db: Session
 ) -> None:
     debate_comment_like = (
         db.query(DebateCommentLike)
         .filter(
-            DebateCommentLike.user_id == user.id,
+            DebateCommentLike.user_id == user_id,
             DebateCommentLike.debate_comment_id == debate_comment_id,
         )
         .first()
@@ -297,6 +348,7 @@ def deleteDebateCommentLikeService(
 
 
 __all__ = [
+    "getDebateListService",
     "getDebateService",
     "getPopularDebateListService",
     "getDebateLikeService",

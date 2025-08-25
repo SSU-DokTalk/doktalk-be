@@ -1,20 +1,14 @@
-from datetime import datetime, timezone, timedelta
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import func
-from sqlalchemy.orm import contains_eager
 
 from app.core.security import oauth2_scheme
 from app.db.connection import get_db
 from app.db.models.soft_delete import BaseSession as Session
 from app.dto.debate import *
 from app.dto.debate_comment import *
-from app.enums import CATEGORY
-from app.model import Debate, Book
 from app.service.debate import *
 from app.var import *
 
@@ -36,50 +30,7 @@ def getDebateListController(
     """
     토론방 리스트 조회
     """
-    conditions = list()
-    if searchby == "bt":
-        conditions = [
-            func.instr(func.lower(Book.title), keyword) > 0
-            for keyword in search.lower().split()
-        ]
-    elif searchby == "it":
-        conditions = [
-            func.instr(func.lower(Debate.title), keyword) > 0
-            for keyword in search.lower().split()
-        ]
-    if 0 < category <= CATEGORY.max():
-        conditions.append((Debate.category.bitwise_and(category)) == category)
-
-    order_by = []
-    if sortby == "popular":
-        from__ = datetime.now(timezone.utc) - timedelta(days=7)
-        order_by.append(Debate.likes_num.desc())
-        conditions.append(Debate.created >= from__)
-    elif sortby == "from":
-        try:
-            year, month, day = map(int, from_.split("."))
-            conditions.append(
-                Debate.created >= datetime(year=year, month=month, day=day)
-            )
-        except Exception as e:
-            if e is AttributeError or e is ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid date format. Please use 'YYYY-MM-DD'",
-                )
-            raise HTTPException(status_code=400, detail="errorCode: D-0001")
-    if sortby == "from":
-        order_by.append(Debate.created.asc())
-    else:
-        order_by.append(Debate.created.desc())
-
-    return paginate(
-        db.query(Debate)
-        .join(Debate.book)
-        .filter(*conditions)
-        .order_by(*order_by)
-        .options(contains_eager(Debate.book))
-    )
+    return getDebateListService(category, search, searchby, sortby, from_, db)
 
 
 @router.get("/popular", response_model=List[BasicDebateRes])
@@ -123,7 +74,7 @@ def getDebateController(debate_id: int, db: Session = Depends(get_db)):
     """
     단일 토론 조회
     """
-    return BasicDebateRes.model_validate(getDebateService(debate_id, db))
+    return getDebateService(debate_id, db)
 
 
 @router.get("/{debate_id}/comments")
