@@ -61,7 +61,7 @@ def getDebateListService(
             if e is AttributeError or e is ValueError:
                 raise HTTPException(
                     status_code=400,
-                    detail="Invalid date format. Please use 'YYYY-MM-DD'",
+                    detail="Invalid date format. Please use 'YYYY.MM.DD'",
                 )
             raise HTTPException(status_code=400, detail="errorCode: D-0001")
 
