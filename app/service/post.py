@@ -27,6 +27,7 @@ def getPostListService(
     conditions = list()
 
     # 검색어가 있는 경우 title과 content에서 OR 조건으로 검색
+    # TODO: MySQL full-text search (MATCH ... AGAINST)
     if search:
         search_conditions = []
         for keyword in search.lower().split():
