@@ -96,7 +96,7 @@ def getPopularDebateListService(db: Session) -> List[Debate]:
     from_ = datetime.now(timezone.utc) - timedelta(days=7)
     return (
         db.query(Debate)
-        .filter(Debate.created >= from_)
+        # .filter(Debate.created >= from_)  # TODO: 현재 글이 너무 적어서 전체 범위에서 찾도록 함
         .join(Debate.user)
         .join(Debate.book)
         .options(contains_eager(Debate.user))
