@@ -4,16 +4,55 @@ from fastapi import HTTPException
 from fastapi_pagination import Params, Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pymysql.err import IntegrityError as PymysqlIntegrityError
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
 from app.db.models.soft_delete import BaseSession as Session
-from app.dto.post import CreatePostReq
+from app.dto.post import CreatePostReq, BasicPostRes
 from app.dto.post_comment import CreatePostCommentReq, BasicPostComment
 from app.model import User, Post, PostLike, PostComment, PostCommentLike
 from app.schema.post_like import PostLikeSchema
 from app.schema.post_comment_like import PostCommentLikeSchema
+
+
+def getPostListService(
+    search: str,
+    sortby: str,
+    db: Session,
+) -> Page[BasicPostRes]:
+    """
+    게시글 리스트 조회 서비스 (검색 기능 포함)
+    """
+    conditions = list()
+
+    # 검색어가 있는 경우 title과 content에서 OR 조건으로 검색
+    # TODO: MySQL full-text search (MATCH ... AGAINST)
+    if search:
+        search_conditions = []
+        for keyword in search.lower().split():
+            search_conditions.extend([
+                func.instr(func.lower(Post.title), keyword) > 0,
+                func.instr(func.lower(Post.content), keyword) > 0
+            ])
+        # 각 키워드에 대해 title 또는 content 중 하나라도 매칭되면 포함
+        if search_conditions:
+            conditions.append(or_(*search_conditions))
+
+    order_by = []
+    if sortby == "popular":
+        order_by.append(Post.likes_num.desc())
+        order_by.append(Post.comments_num.desc())
+    # 기본적으로 최신순으로 정렬 (latest)
+    order_by.append(Post.created.desc())
+
+    return paginate(
+        db.query(Post)
+        .join(Post.user)
+        .filter(*conditions)
+        .order_by(*order_by)
+        .options(contains_eager(Post.user))
+    )
 
 
 def getPostService(post_id: int, db: Session):
@@ -270,6 +309,7 @@ def deletePostCommentLikeService(user: User, post_comment_id: int, db: Session) 
 
 
 __all__ = [
+    "getPostListService",
     "getPostService",
     "getPostLikeService",
     "getPostCommentsService",

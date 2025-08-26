@@ -1,13 +1,19 @@
 from typing import List
+from datetime import datetime, timezone, timedelta
 
 from fastapi import HTTPException
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from pymysql.err import IntegrityError as PymysqlIntegrityError
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
 from app.db.models.soft_delete import BaseSession as Session
-from app.dto.summary import CreateSummaryReq
+from app.dto.summary import CreateSummaryReq, BasicSummaryRes
 from app.dto.summary_comment import CreateSummaryCommentReq, BasicSummaryComment
+from app.enums import LANGUAGE, CATEGORY
+from app.function.generate_dummy import generate_sentence
 from app.schema.book_api import BookAPIResponseSchema
 from app.model import (
     Book,
@@ -23,6 +29,95 @@ from app.schema.summary_comment import SummaryCommentSchema
 from app.schema.summary_comment_like import SummaryCommentLikeSchema
 from app.service.book import getOrCreateBook
 from app.service.book_api import getAPIBookDetailService
+
+
+def getSummaryListService(
+    category: int,
+    search: str,
+    searchby: str,
+    sortby: str,
+    lang: LANGUAGE,
+    db: Session,
+) -> Page[BasicSummaryRes]:
+    """
+    요약 리스트 조회 서비스
+    """
+    conditions = list()
+    if searchby == "bt":
+        conditions = [
+            func.instr(func.lower(Book.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+    elif searchby == "it":
+        conditions = [
+            func.instr(func.lower(Summary.title), keyword) > 0
+            for keyword in search.lower().split()
+        ]
+    if 0 < category <= CATEGORY.max():
+        conditions.append((Summary.category.bitwise_and(category)) == category)
+
+    order_by = []
+    if sortby == "popular":
+        from_ = datetime.now(timezone.utc) - timedelta(days=7)
+        order_by.append(Summary.likes_num.desc())
+        conditions.append(Summary.created >= from_)
+    order_by.append(Summary.created.desc())
+
+    summaries = paginate(
+        db.query(Summary)
+        .join(Summary.book)
+        .filter(*conditions)
+        .order_by(*order_by)
+        .options(contains_eager(Summary.book))
+    )
+
+    # Charged content를 마스킹
+    for items in summaries.items:
+        items.charged_content = generate_sentence(
+            items.charged_content[:200], lang)
+
+    return summaries
+
+
+def getPopularSummaryListService(
+    lang: LANGUAGE,
+    db: Session,
+) -> List[BasicSummaryRes]:
+    """
+    인기 요약 리스트 조회 서비스
+    """
+    from_ = datetime.now(timezone.utc) - timedelta(days=7)
+    summaries = (
+        db.query(Summary)
+        .filter(Summary.created >= from_)
+        .join(Summary.book)
+        .join(Summary.user)
+        .options(contains_eager(Summary.book))
+        .options(contains_eager(Summary.user))
+        .order_by(
+            Summary.likes_num.desc(),
+            Summary.comments_num.desc(),
+            Summary.created.desc(),
+        )
+        .limit(5)
+    ).all()
+
+    # Charged content를 마스킹
+    for summary in summaries:
+        summary.charged_content = generate_sentence(
+            summary.charged_content[:200], lang)
+
+    return summaries
+
+
+def getSummaryWithMaskingService(summary_id: int, lang: LANGUAGE, db: Session):
+    """
+    단일 요약 조회 (마스킹 포함)
+    """
+    summary = getSummaryService(summary_id, db)
+    summary.charged_content = generate_sentence(
+        summary.charged_content[:200], lang)
+    return summary
 
 
 def getSummaryService(summary_id: int, db: Session):
@@ -318,7 +413,10 @@ def deleteSummaryCommentLikeService(
 
 
 __all__ = [
+    "getSummaryListService",
+    "getPopularSummaryListService",
     "getSummaryService",
+    "getSummaryWithMaskingService",
     "getSummaryChargedContentService",
     "getSummaryLikeService",
     "getSummaryCommentService",
