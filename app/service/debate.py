@@ -58,7 +58,7 @@ def getDebateListService(
                 Debate.created >= datetime(year=year, month=month, day=day)
             )
         except Exception as e:
-            if e is AttributeError or e is ValueError:
+            if isinstance(e, (AttributeError, ValueError)):
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid date format. Please use 'YYYY.MM.DD'",
