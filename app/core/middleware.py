@@ -30,7 +30,10 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 r"/book(s|/([0-9]+))",
             ]
         elif request.method == "POST":
-            token_not_needed = [r"/user/(register|login|access-token)"]
+            token_not_needed = [
+                r"/user/(register|login|access-token)",
+                r"/chatbot",
+            ]
         elif request.method == "PUT":
             token_not_needed = []
         elif request.method == "PATCH":

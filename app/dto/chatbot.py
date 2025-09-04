@@ -1,10 +1,11 @@
+from typing import List, Optional, Literal
+
 from pydantic import BaseModel
-from typing import List, Optional
 
 
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
-    content: str
+    role: Literal["user", "model"]
+    message: str
 
 
 class ChatbotRequest(BaseModel):
@@ -13,4 +14,6 @@ class ChatbotRequest(BaseModel):
 
 
 class ChatbotResponse(BaseModel):
-    response: str
+    message: str
+    success: bool = True
+    # chat_history: Optional[List[ChatMessage]] = []
