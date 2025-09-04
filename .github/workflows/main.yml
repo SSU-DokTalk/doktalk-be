@@ -76,4 +76,5 @@ jobs:
             -e FACEBOOK_CLIENT_SECRET=${{ secrets.FACEBOOK_CLIENT_SECRET }} \
             \
             -e JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
+            -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
             -d ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:v${{ github.run_number }}
